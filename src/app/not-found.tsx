@@ -1,28 +1,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Footer } from "@/components/layout/footer";
-import { Header } from "@/components/layout/header";
-import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/shared/empty-state";
+import { SearchIcon } from "@/components/shared/icons";
 import { t } from "@/i18n";
 
 export const metadata: Metadata = { title: t("errors.notFoundTitle") };
 
+/** Unknown routes: the prototype `.empty-st` inside the site chrome. */
 export default function NotFound() {
   return (
-    <>
-      <Header />
-      <main
-        id="main"
-        className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center"
-      >
-        <h1 className="text-3xl font-semibold">{t("errors.notFoundTitle")}</h1>
-        <p className="text-ink-muted">{t("errors.notFoundBody")}</p>
-        <Button asChild>
-          <Link href="/">{t("common.backHome")}</Link>
-        </Button>
-      </main>
-      <Footer />
-    </>
+    <div className="lm-pg">
+      <EmptyState
+        icon={<SearchIcon />}
+        title={t("errors.notFoundTitle")}
+        text={t("errors.notFoundBody")}
+        action={
+          <Link href="/" className="lm-btn primary">
+            {t("common.backHome")}
+          </Link>
+        }
+      />
+    </div>
   );
 }

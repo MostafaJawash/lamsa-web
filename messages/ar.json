@@ -12,7 +12,8 @@
     "hair": "شعر",
     "sale": "تنزيلات",
     "account": "قائمة الحساب",
-    "skipToContent": "انتقل إلى المحتوى"
+    "skipToContent": "انتقل إلى المحتوى",
+    "categories": "الأقسام"
   },
   "pages": {
     "home": "الرئيسية",
@@ -35,17 +36,32 @@
     "notifications": "الإشعارات",
     "settings": "الإعدادات",
     "checkout": "إتمام الطلب",
-    "checkoutSuccess": "تم تأكيد طلبك"
+    "checkoutSuccess": "تم تأكيد طلبك",
+    "categories": "الأقسام"
   },
   "layout": {
     "header": "رأس الصفحة",
     "footer": "تذييل الصفحة",
-    "copyright": "© {year} لمسة"
+    "copyright": "© لمسة {year}",
+    "shippingReturns": "الشحن والإرجاع",
+    "contact": "تواصل معنا",
+    "cashOnDelivery": "الدفع عند الاستلام متوفر",
+    "search": "بحث",
+    "searchPlaceholder": "ابحث عن منتج أو ماركة",
+    "searchSubmit": "بحث",
+    "favorites": "المفضلة",
+    "cart": "السلة",
+    "login": "تسجيل الدخول",
+    "back": "رجوع",
+    "tabbar": "التنقل السفلي",
+    "backendDown": "الباك إند مش شغال",
+    "dismiss": "إخفاء"
   },
   "common": {
     "close": "إغلاق",
     "retry": "حاول مرة ثانية",
-    "backHome": "الرجوع للرئيسية"
+    "backHome": "الرجوع للرئيسية",
+    "loading": "جاري التحميل"
   },
   "errors": {
     "notFoundTitle": "الصفحة غير موجودة",
@@ -158,5 +174,41 @@
       "many": "{count} قطعة",
       "other": "{count} قطعة"
     }
+  },
+  "tabs": {
+    "home": "الرئيسية",
+    "categories": "الأقسام",
+    "favorites": "المفضلة",
+    "cart": "السلة",
+    "account": "حسابي"
+  },
+  "home": {
+    "title": "لمسة، متجر تجميل أونلاين",
+    "banners": {
+      "label": "العروض",
+      "saleTitle": "تنزيلات الموسم",
+      "saleSubtitle": "خصومات لحد ٣٠٪ على مكياج وعطور مختارة",
+      "newTitle": "وصل حديثاً",
+      "newSubtitle": "منتجات جديدة كل أسبوع",
+      "ctaSale": "تسوّق العروض",
+      "ctaNew": "شوف الجديد",
+      "ctaDefault": "اكتشف"
+    },
+    "newArrivals": "وصل حديثاً",
+    "byCategory": "تسوّق حسب القسم",
+    "onSale": "عروض لفترة محدودة",
+    "brands": "ماركاتنا",
+    "seeAll": "عرض الكل",
+    "allBrands": "كل الماركات",
+    "emptyNew": "رح نضيف منتجات جديدة قريباً",
+    "emptySale": "ما في عروض حالياً، تابعنا قريباً",
+    "sectionFailed": "ما قدرنا نعرض هالقسم هلأ."
+  },
+  "card": {
+    "isNew": "جديد",
+    "discount": "−{percent}٪",
+    "soldOut": "نفدت الكمية",
+    "addFavorite": "أضف للمفضلة",
+    "colors": "الألوان المتوفرة"
   }
 }

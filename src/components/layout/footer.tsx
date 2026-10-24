@@ -1,8 +1,7 @@
 import { cacheLife } from "next/cache";
 
 import { t } from "@/i18n";
-
-import { Container } from "./container";
+import { formatYearArabic } from "@/lib/format";
 
 /** The current year, cached so the footer stays part of the static shell. */
 async function currentYear(): Promise<number> {
@@ -11,17 +10,15 @@ async function currentYear(): Promise<number> {
   return new Date().getFullYear();
 }
 
-/** Placeholder footer. TODO: store info, links, delivery and payment notes. */
+/** Prototype `.d-foot` (desktop only; the mobile app has no footer). Links come later. */
 export async function Footer() {
-  const year = await currentYear();
+  const year = formatYearArabic(await currentYear());
   return (
-    <footer
-      aria-label={t("layout.footer")}
-      className="mt-auto border-t border-line bg-surface"
-    >
-      <Container className="py-6 text-sm text-ink-muted">
-        {t("layout.copyright", { year })}
-      </Container>
+    <footer className="lm-dfoot max-md:hidden">
+      <span>{t("layout.copyright", { year })}</span>
+      <span>{t("layout.shippingReturns")}</span>
+      <span>{t("layout.contact")}</span>
+      <span>{t("layout.cashOnDelivery")}</span>
     </footer>
   );
 }

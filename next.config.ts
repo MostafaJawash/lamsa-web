@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
     // The backend already serves WebP in thumb / medium / large; never re-optimize here.
     loader: "custom",
     loaderFile: "./src/lib/images.ts",
+    // Exactly the backend sizes (thumb / medium / large), so every srcset lists three real
+    // files instead of ~16 widths that map to the same three URLs (smaller HTML, too).
+    deviceSizes: [300, 800, 1600],
+    imageSizes: [],
     // Ignored by Next.js while `loader: "custom"` is set (only the default loader uses it).
     // Kept so the media host is documented and ready if the default loader is ever used.
     remotePatterns: mediaUrl

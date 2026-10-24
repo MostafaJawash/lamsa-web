@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Arabic, Reem_Kufi } from "next/font/google";
 
-import { Toaster } from "@/components/ui/sonner";
+import { SiteShell } from "@/components/layout/site-shell";
+import { DeferredToaster } from "@/components/layout/deferred-toaster";
 import { siteConfig } from "@/config/site";
 import { defaultLocale, getDirection, t } from "@/i18n";
 
@@ -49,6 +50,10 @@ export const viewport: Viewport = {
     },
   ],
   colorScheme: "light dark",
+  width: "device-width",
+  initialScale: 1,
+  // Content may extend under notches; the mobile header and tabbar pad with env(safe-area-inset-*).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -61,12 +66,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+          className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
         >
           {t("nav.skipToContent")}
         </a>
-        {children}
-        <Toaster />
+        <SiteShell>{children}</SiteShell>
+        <DeferredToaster />
       </body>
     </html>
   );

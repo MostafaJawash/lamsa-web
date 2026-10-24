@@ -70,3 +70,12 @@ export function pluralize(count: number, key: PluralKey): string {
   const category = pluralRules.select(count) as keyof typeof forms;
   return interpolate(forms[category] ?? forms.other, { count });
 }
+
+const arabicIndic = new Intl.NumberFormat("ar-u-nu-arab", {
+  useGrouping: false,
+});
+
+/** A year in Arabic-Indic digits, e.g. 2026 → "٢٠٢٦" (footer only, as in the prototype). */
+export function formatYearArabic(year: number): string {
+  return arabicIndic.format(year);
+}

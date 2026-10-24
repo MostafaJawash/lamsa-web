@@ -1,10 +1,8 @@
-import { Container } from "./container";
-
-/** Placeholder page body: just the page's title. Replace with real content per feature. */
+/** Placeholder page body: the page title as the prototype `.list-head h2`. */
 export function PageTitle({ children }: { children: React.ReactNode }) {
   return (
-    <Container className="py-10">
-      <h1 className="text-3xl font-semibold text-ink">{children}</h1>
-    </Container>
+    <div className="lm-list-head">
+      <h1>{children}</h1>
+    </div>
   );
 }

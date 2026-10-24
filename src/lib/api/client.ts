@@ -27,6 +27,16 @@ export type ApiClient = Client<ApiPaths>;
 
 export const API_TIMEOUT_MS = 10_000;
 
+/**
+ * Shorter limit for reads that block a page section (home, navigation). Pass it per
+ * request: `publicApi.GET("/banners", { signal: pageTimeout() })`.
+ */
+export const PAGE_TIMEOUT_MS = 4_000;
+
+export function pageTimeout(): AbortSignal {
+  return AbortSignal.timeout(PAGE_TIMEOUT_MS);
+}
+
 /** Adds a timeout and turns network failures into `ApiError`s (status 0). */
 async function fetchWithTimeout(request: Request): Promise<Response> {
   const signal = AbortSignal.any([

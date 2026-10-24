@@ -22,7 +22,13 @@ function parseServerEnv(): ServerEnv {
     API_BASE_URL: process.env.API_BASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   });
-  if (!result.success) throw new Error(formatEnvError(result.error, "server"));
+  if (!result.success) {
+    const issues = result.error.issues.map((issue) => ({
+      name: issue.path.join("."),
+      message: issue.message,
+    }));
+    throw new Error(formatEnvError(issues, "server"));
+  }
   return { ...result.data, ...publicEnv };
 }
 

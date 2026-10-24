@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
-import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/shared/empty-state";
+import { XIcon } from "@/components/shared/icons";
 import { t } from "@/i18n";
 
 export default function ErrorPage({
@@ -19,18 +20,26 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <main
-      id="main"
-      className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center"
-    >
-      <h1 className="text-3xl font-semibold">{t("errors.errorTitle")}</h1>
-      <p className="text-ink-muted">{t("errors.errorBody")}</p>
-      <div className="flex gap-3">
-        <Button onClick={() => retry()}>{t("common.retry")}</Button>
-        <Button variant="outline" asChild>
-          <Link href="/">{t("common.backHome")}</Link>
-        </Button>
-      </div>
-    </main>
+    <div className="lm-pg">
+      <EmptyState
+        icon={<XIcon />}
+        title={t("errors.errorTitle")}
+        text={t("errors.errorBody")}
+        action={
+          <div className="flex justify-center gap-3">
+            <button
+              type="button"
+              className="lm-btn primary"
+              onClick={() => retry()}
+            >
+              {t("common.retry")}
+            </button>
+            <Link href="/" className="lm-btn ghost">
+              {t("common.backHome")}
+            </Link>
+          </div>
+        }
+      />
+    </div>
   );
 }
