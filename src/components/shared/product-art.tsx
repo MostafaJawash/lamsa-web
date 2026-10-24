@@ -9,38 +9,61 @@ function Shadow() {
   return <ellipse cx="100" cy="179" rx="54" ry="7" fill="#000" opacity=".08" />;
 }
 
-/** Prototype "bottle" shape in neutral tones: products without (or with a broken) image. */
+const SILHOUETTE_ID = "lm-silhouette";
+
+/**
+ * Prototype "bottle" shape in neutral (theme) tones, defined once per page as an SVG
+ * symbol (render `<SilhouetteSymbol />` in the shell). Tiles reference it with
+ * `<ProductSilhouette />`, so a page full of cards carries the drawing only once.
+ */
+export function SilhouetteSymbol() {
+  return (
+    <svg
+      width="0"
+      height="0"
+      aria-hidden="true"
+      focusable="false"
+      style={{ position: "absolute" }}
+    >
+      <symbol id={SILHOUETTE_ID} viewBox="0 0 200 200">
+        <Shadow />
+        <g style={{ fill: "var(--lamsa-muted)" }} opacity=".55">
+          <rect x="90" y="26" width="20" height="18" rx="4" />
+          <rect x="84" y="42" width="32" height="16" rx="5" />
+        </g>
+        <path
+          d="M68 72q0-14 16-14h32q16 0 16 14v94q0 8-8 8H76q-8 0-8-8z"
+          style={{ fill: "var(--lamsa-muted)" }}
+          opacity=".3"
+        />
+        <rect
+          x="80"
+          y="98"
+          width="40"
+          height="44"
+          rx="4"
+          fill="#fff"
+          opacity=".6"
+        />
+        <rect
+          x="74"
+          y="68"
+          width="7"
+          height="96"
+          rx="3.5"
+          fill="#fff"
+          opacity=".25"
+        />
+      </symbol>
+    </svg>
+  );
+}
+
+/** Products without (or with a broken) image: the bottle silhouette (see SilhouetteSymbol). */
 export function ProductSilhouette() {
   return (
     <svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">
-      <Shadow />
-      <g style={{ fill: "var(--lamsa-muted)" }} opacity=".55">
-        <rect x="90" y="26" width="20" height="18" rx="4" />
-        <rect x="84" y="42" width="32" height="16" rx="5" />
-      </g>
-      <path
-        d="M68 72q0-14 16-14h32q16 0 16 14v94q0 8-8 8H76q-8 0-8-8z"
-        style={{ fill: "var(--lamsa-muted)" }}
-        opacity=".3"
-      />
-      <rect
-        x="80"
-        y="98"
-        width="40"
-        height="44"
-        rx="4"
-        fill="#fff"
-        opacity=".6"
-      />
-      <rect
-        x="74"
-        y="68"
-        width="7"
-        height="96"
-        rx="3.5"
-        fill="#fff"
-        opacity=".25"
-      />
+      <use href={`#${SILHOUETTE_ID}`} />
     </svg>
   );
 }

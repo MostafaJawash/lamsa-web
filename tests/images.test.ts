@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import lamsaImageLoader, {
+import {
   buildImageUrl,
   pickImageUrl,
   sizeForWidth,
-} from "@/lib/images";
+  srcSetFor,
+} from "@/lib/image-urls";
+import lamsaImageLoader from "@/lib/images";
 
 const MEDIA = "https://media.test/media";
 const KEY = "products/42/3f9ce1";
@@ -74,5 +76,17 @@ describe("pickImageUrl", () => {
     expect(pickImageUrl(urls, 300)).toBe("t.webp");
     expect(pickImageUrl(urls, 500)).toBe("m.webp");
     expect(pickImageUrl(urls, 1200)).toBe("l.webp");
+  });
+});
+
+describe("srcSetFor", () => {
+  it("lists the three backend files with their widths", () => {
+    expect(
+      srcSetFor({
+        thumb: "a_thumb.webp",
+        medium: "a_medium.webp",
+        large: "a_large.webp",
+      }),
+    ).toBe("a_thumb.webp 300w, a_medium.webp 800w, a_large.webp 1600w");
   });
 });

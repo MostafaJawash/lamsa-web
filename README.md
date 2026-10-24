@@ -41,7 +41,7 @@ src/
     types.ts                Aliases of the generated backend schemas
   components/ui/            shadcn/ui components (button, input, label, card, dialog, sheet, sonner)
   components/layout/        Site chrome: SiteShell, desktop header + nav, mobile header, tabbar, footer, dev backend notice
-  components/shared/        Reusable pieces: icons, product card, price, images with fallback, category tile, brand logo, section, empty state, skeletons, error boundary
+  components/shared/        Reusable pieces: icons, product card, price, BackendImage, category tile, brand logo, section, empty state, skeletons, error boundary
   config/site.ts            Store name, navigation (tabs, chips, tabbar) and navState(pathname) (active tab, mobile title)
   i18n/                     Locale config and the typed t() helper
   hooks/                    Shared client hooks
@@ -52,7 +52,8 @@ src/
   lib/auth/session.ts       Server-only session cookie helpers
   lib/env.ts                Server env (zod, fail fast); lib/env.public.ts for NEXT_PUBLIC_*
   lib/errors.ts             ApiError, backend error codes, Arabic fallbacks
-  lib/images.ts             next/image loader (thumb / medium / large)
+  lib/image-urls.ts         Backend image URLs and srcset (thumb / medium / large), server and client
+  lib/images.ts             next/image loader, kept for completeness (the site renders BackendImage)
   lib/format.ts             formatPrice, formatDate, pluralize
   lib/utils.ts              cn()
   proxy.ts                  Next.js 16 Proxy (formerly middleware) for /account and /checkout
@@ -60,6 +61,8 @@ tests/                      Vitest unit tests
 e2e/                        Playwright tests (home, layout at 4 widths, backend down); e2e/screenshots/ is git-ignored
 scripts/start-standalone.mjs  Starts the standalone build with .env files and static assets (used by npm start)
 scripts/visual-compare.mjs    Screenshots the prototype and the site side by side
+scripts/bundle-report.mjs     Client JS per route from the Next.js bundle analyzer
+scripts/lighthouse-runs.mjs   Runs Lighthouse N times and prints the median
 ```
 
 ## BFF and auth
@@ -143,7 +146,8 @@ Commit `src/lib/api/schema.d.ts` together with the code that uses the changed en
 - **Client components** only when needed (state, effects, browser APIs). Add `"use client"` at the top, keep them small and push them to the leaves.
 - **Texts:** never hard-code UI text. Add it to `messages/ar.json` and use `t("section.key")`; keys are type-checked. Plurals: `pluralize(count, "products")`. Designed so a `[locale]` segment can be added later (`src/i18n/config.ts`).
 - **Formatting:** prices with `formatPrice("8.95")` → `8,95 €` (string math, no floats); dates with `formatDate()` (Arabic, Latin digits, Europe/Berlin). Latin digits everywhere, as in the prototype.
-- **Images:** always `next/image` with the backend `image_key` or one of its URLs as `src`. The custom loader picks `thumb` (≤ 300), `medium` (≤ 800) or `large`; Next never re-optimizes.
+- **Images:** backend images use `BackendImage` (`src/components/shared/backend-image.tsx`): a plain server-rendered `<img>` whose `srcset` lists the three backend files (300 / 800 / 1600w), with `sizes` set to the rendered width. No client component per image. `priority` preloads above-the-fold images (the mobile LCP). For a fallback, render it in the tile _before_ the image (silhouette, monogram); the global module script hides an image that fails to load (`data-failed`) so the fallback shows.
+- **Mixed directions:** any sign, percent or currency next to Arabic text goes in an isolated LTR run (`.lm-num` + `dir="ltr"`), like prices and the discount badge (`−25٪`).
 - **RTL:** use logical utilities only (`ms-/me-`, `ps-/pe-`, `start-/end-`, `border-s/e`, `rounded-s/e`, `text-start/end`, `slide-in-from-start/end`), never `left/right`, `ml/mr`, `pl/pr`. The `Sheet` sides are `start | end | top | bottom`. shadcn is configured with `"rtl": true`, so `npx shadcn@4.21.4 add <component>` generates logical classes; still review each new component.
 - **Design tokens:** brand colors as Tailwind utilities (`bg-surface`, `text-ink`, `text-ink-muted`, `border-line`, `text-brand`, `bg-brand-soft`, `text-gold`, `text-ok`, `text-warn`, `text-danger`, `shadow-card`), plus the shadcn tokens (`bg-primary`, …) mapped onto them. Fonts: body IBM Plex Sans Arabic; the display font (Reem Kufi, `font-display` / `var(--lamsa-display)`) only where the prototype uses it (logo, banner titles, page titles, monograms). Dark mode follows the system.
 - **Naming:** files in kebab-case (`page-title.tsx`), components in PascalCase, one feature per folder; import with `@/…`.
@@ -185,6 +189,25 @@ Pages never crash or go blank because of the backend:
   - brand without logo: the monogram on a color hashed from the brand id.
 - **Backend down:** every page still returns 200 with the chrome and the fallbacks. In development a dismissible "الباك إند مش شغال" notice shows at the top.
 - Unknown routes use `not-found.tsx` (the prototype `.empty-st`).
+
+## Performance
+
+Measure before changing anything:
+
+```powershell
+npx next analyze --output                  # bundle analyzer data in .next/diagnostics/analyze
+node scripts/bundle-report.mjs             # client JS per route, by package, our client modules
+npm run build; npm run start -- --port 3300
+node scripts/lighthouse-runs.mjs --runs 5  # mobile; add --desktop for desktop
+```
+
+Rules that keep the client small:
+
+- **No client component per item.** Cards, tiles and images are server components; client code is limited to the navigation (active tab, mobile header, tabbar), the section error boundaries and the deferred Toaster. Use `clsx` (not `cn()`, which pulls tailwind-merge) in client components with static class lists.
+- **Fonts:** only the weights the prototype uses: IBM Plex Sans Arabic 400/500/600/700 (Arabic + Latin preloaded, as the body font) and Reem Kufi 600/700 (not preloaded). The desktop logo box has a fixed width so the display font swapping in moves nothing (CLS 0).
+- **Above the fold:** the first two cards of the first rail and the first banner image are preloaded with high priority.
+
+**Lighthouse on a slow machine:** Lighthouse simulates a phone by slowing the host CPU 4×, assuming a host with a benchmark index of at least 1000. On a slower host it warns ("The tested device appears to have a slower CPU than Lighthouse expects") and the mobile score mostly reflects the machine. Check `environment.benchmarkIndex` in the report before comparing numbers, and compare builds on the same machine at the same time.
 
 ## Dependency policy
 

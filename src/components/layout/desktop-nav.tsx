@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 
 import { mainNav, navState, SALE_HREF } from "@/config/site";
 import { t } from "@/i18n";
-import { cn } from "@/lib/utils";
+// clsx, not cn(): no tailwind-merge in the client bundle for static class lists.
+import { clsx as cn } from "clsx";
 
 /** Prototype `.d-nav`: category tabs; the active one is underlined in accent. */
 export function DesktopNavView({ active }: { active: Route | null }) {

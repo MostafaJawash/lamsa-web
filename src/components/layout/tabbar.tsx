@@ -12,7 +12,8 @@ import {
 } from "@/components/shared/icons";
 import { navState, tabs, type TabKey } from "@/config/site";
 import { t } from "@/i18n";
-import { cn } from "@/lib/utils";
+// clsx, not cn(): no tailwind-merge in the client bundle for static class lists.
+import { clsx as cn } from "clsx";
 
 const ICONS: Record<TabKey, React.ReactNode> = {
   home: <HomeIcon />,

@@ -3,8 +3,8 @@ import Link from "next/link";
 
 import type { ImageUrls } from "@/features/catalog/types";
 
+import { BackendImage } from "./backend-image";
 import { ProductSilhouette } from "./product-art";
-import { SafeImage } from "./safe-image";
 
 /** Tiles fill 1/2 of the page on mobile, up to ~360px on desktop. */
 const TILE_IMAGE_SIZES = "(max-width: 767px) 45vw, 360px";
@@ -48,21 +48,14 @@ export function CategoryTile({
   image?: ImageUrls | null;
   art?: React.ReactNode;
 }) {
-  const silhouette = <ProductSilhouette />;
   return (
     <Link href={href} className="lm-cat-tile">
       {art ?? (
         <span className="lm-art">
+          <ProductSilhouette />
           {image ? (
-            <SafeImage
-              src={image.medium}
-              alt=""
-              sizes={TILE_IMAGE_SIZES}
-              fallback={silhouette}
-            />
-          ) : (
-            silhouette
-          )}
+            <BackendImage urls={image} alt="" sizes={TILE_IMAGE_SIZES} />
+          ) : null}
         </span>
       )}
       <span>{label}</span>

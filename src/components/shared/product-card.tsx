@@ -4,13 +4,25 @@ import type { ProductCard as ProductCardData } from "@/features/catalog/types";
 import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 
+import { BackendImage } from "./backend-image";
 import { HeartIcon } from "./icons";
 import { Price } from "./price";
 import { ProductSilhouette } from "./product-art";
-import { SafeImage } from "./safe-image";
 
 /** Card widths: rail columns are 146px on mobile, up to 190px on desktop. */
 export const CARD_IMAGE_SIZES = "(max-width: 767px) 146px, 190px";
+
+/**
+ * Discount badge, e.g. "−25٪" (U+2212 minus, Arabic percent sign as in the prototype),
+ * as an isolated LTR run so the sign stays in front of the number inside RTL text.
+ */
+export function DiscountBadge({ percent }: { percent: number }) {
+  return (
+    <i className="lm-bd off lm-num" dir="ltr">
+      {t("card.discount", { percent })}
+    </i>
+  );
+}
 
 type ProductCardProps = {
   product: ProductCardData;
@@ -20,14 +32,16 @@ type ProductCardProps = {
   preload?: boolean;
 };
 
-/** Prototype `card()`. The whole card links to the product; the heart sits on top. */
+/**
+ * Prototype `card()`. The whole card links to the product; the heart sits on top.
+ * Server-only: the image fallback works without client code (see BackendImage).
+ */
 export function ProductCard({
   product,
   currentPath,
   preload = false,
 }: ProductCardProps) {
   const soldOut = !product.in_stock;
-  const silhouette = <ProductSilhouette />;
   return (
     <article className={cn("lm-card", soldOut && "out")}>
       <Link
@@ -35,26 +49,22 @@ export function ProductCard({
         className="lm-card-link"
       >
         <span className="lm-art">
+          <ProductSilhouette />
           {product.image ? (
-            <SafeImage
-              src={product.image.medium}
+            <BackendImage
+              urls={product.image}
               alt={product.name}
               sizes={CARD_IMAGE_SIZES}
-              preload={preload}
-              fallback={silhouette}
+              priority={preload}
             />
-          ) : (
-            silhouette
-          )}
+          ) : null}
         </span>
         <span className="lm-badges">
           {product.is_new ? (
             <i className="lm-bd new">{t("card.isNew")}</i>
           ) : null}
           {product.discount_percent ? (
-            <i className="lm-bd off">
-              {t("card.discount", { percent: product.discount_percent })}
-            </i>
+            <DiscountBadge percent={product.discount_percent} />
           ) : null}
           {soldOut ? <i className="lm-bd na">{t("card.soldOut")}</i> : null}
         </span>
@@ -77,13 +87,14 @@ export function ProductCard({
           </span>
         ) : null}
       </Link>
-      <Link
-        href={{ pathname: "/login", query: { next: currentPath } }}
+      {/* Plain link until favorites exist (auth phase): no prefetch or client code per card. */}
+      <a
+        href={`/login?next=${encodeURIComponent(currentPath)}`}
         className="lm-fav"
         aria-label={t("card.addFavorite")}
       >
         <HeartIcon />
-      </Link>
+      </a>
     </article>
   );
 }

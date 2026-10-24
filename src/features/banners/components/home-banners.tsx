@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { PaletteArt, PerfumeArt } from "@/components/shared/product-art";
-import { SafeImage } from "@/components/shared/safe-image";
+import { BackendImage } from "@/components/shared/backend-image";
 import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -45,12 +45,11 @@ function BannerCard({ banner, index }: { banner: Banner; index: number }) {
     <BannerBody
       art={
         banner.image ? (
-          <SafeImage
-            src={banner.image.medium}
+          <BackendImage
+            urls={banner.image}
             alt=""
             sizes={BANNER_ART_SIZES}
-            preload={index === 0}
-            fallback={null}
+            priority={index === 0}
           />
         ) : null
       }

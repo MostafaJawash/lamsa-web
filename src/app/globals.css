@@ -326,6 +326,16 @@
     outline: none;
     color: var(--lamsa-ink);
   }
+  /*
+   * The logo box keeps its Reem Kufi width ("لمسة", 700, 28px = 51.25px) while the display
+   * font is still loading (it is not preloaded), so the search box next to it never moves
+   * when the font swaps in (CLS 0). Update it if the store name changes.
+   */
+  .lm-dbar .lm-logo {
+    flex: none;
+    inline-size: 51.25px;
+    white-space: nowrap;
+  }
   /* .d-icons */
   .lm-dicons {
     display: flex;
@@ -624,6 +634,30 @@
     object-fit: cover;
   }
 
+  /*
+   * Backend images (BackendImage): fill the tile on top of the fallback drawn before them.
+   * The tile background is inherited, so the fallback stays hidden while the image loads
+   * and behind transparent images; a failed image (data-failed, set by the global error
+   * listener) is hidden and the fallback shows.
+   */
+  .lm-fill {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+  }
+  img[data-fallback][data-failed] {
+    visibility: hidden;
+  }
+
+  /* .grid (product lists; 2 columns on mobile, see the media query) */
+  .lm-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
   /* .rail */
   .lm-rail {
     display: grid;
@@ -666,6 +700,8 @@
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
+    /* Never under the heart: card width − start gap (8) − heart (34) − its gap (8) − spacing (4). */
+    max-inline-size: calc(100% - 8px - 34px - 8px - 4px);
   }
   .lm-bd {
     font-style: normal;
@@ -814,6 +850,7 @@
   }
   .lm-logo-m img {
     object-fit: cover;
+    border-radius: 50%;
   }
 
   /* .empty-st, .e-ic */
@@ -898,6 +935,10 @@
     .lm-banner .b-art {
       width: 44%;
     }
+    .lm-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
     .lm-rail {
       grid-auto-columns: 146px;
       gap: 12px;
@@ -919,6 +960,10 @@
   @media (min-width: 768px) {
     .lm-banners.multi {
       grid-template-columns: 1.6fr 1fr;
+    }
+    .lm-grid {
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 22px;
     }
   }
 }

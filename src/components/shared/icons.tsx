@@ -1,4 +1,5 @@
-import { cn } from "@/lib/utils";
+// clsx, not cn(): no tailwind-merge in the client bundle for static class lists.
+import { clsx as cn } from "clsx";
 
 /**
  * The prototype icon set (`const I` in lamsa-presentation.html): 24×24 viewBox, stroke

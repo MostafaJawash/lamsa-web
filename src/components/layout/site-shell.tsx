@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { SilhouetteSymbol } from "@/components/shared/product-art";
+
 import { BackendNotice } from "./backend-notice";
 import { DesktopHeader } from "./desktop-header";
 import { Footer } from "./footer";
@@ -20,6 +22,7 @@ import { Tabbar, TabbarView } from "./tabbar";
 export function SiteShell({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <SilhouetteSymbol />
       {process.env.NODE_ENV === "development" ? (
         <Suspense fallback={null}>
           <BackendNotice />
