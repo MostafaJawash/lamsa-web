@@ -1,0 +1,160 @@
+import type { ProductDetail } from "@/features/catalog/types";
+
+const urls = (key: string) => ({
+  thumb: `https://media.test/media/${key}_thumb.webp`,
+  medium: `https://media.test/media/${key}_medium.webp`,
+  large: `https://media.test/media/${key}_large.webp`,
+});
+
+const base = {
+  is_new: false,
+  is_on_sale: false,
+  in_stock: true,
+  swatches: [],
+  is_favorite: false,
+  attributes: [],
+  variant_options: [],
+  variants: [],
+  items: [],
+  compare_at_price: null,
+  discount_percent: null,
+} satisfies Partial<ProductDetail>;
+
+/** Shaped like GET /products/demo-velvet-lipstick. */
+export const lipstick: ProductDetail = {
+  ...base,
+  id: 1,
+  slug: "demo-velvet-lipstick",
+  name: "أحمر شفاه مخملي",
+  type: "variable",
+  brand: { id: 1, name: "لُمى", slug: "demo-luma" },
+  category: { id: 1, name: "مكياج", slug: "makeup" },
+  breadcrumb: [{ id: 1, name: "مكياج", slug: "makeup" }],
+  image: urls("products/1/main"),
+  price: "8.95",
+  description: "لون غني بلمسة مخملية مطفية.",
+  images: [
+    {
+      id: 1,
+      alt_text: null,
+      variant_id: null,
+      color: null,
+      width: 800,
+      height: 800,
+      urls: urls("products/1/main"),
+    },
+    {
+      id: 2,
+      alt_text: null,
+      variant_id: 1,
+      color: "وردي ترابي",
+      width: 800,
+      height: 800,
+      urls: urls("products/1/pink"),
+    },
+    {
+      id: 3,
+      alt_text: null,
+      variant_id: 2,
+      color: "أحمر كلاسيكي",
+      width: 800,
+      height: 800,
+      urls: urls("products/1/red"),
+    },
+  ],
+  variant_options: [
+    {
+      key: "color",
+      label: "اللون",
+      type: "color",
+      values: [
+        { value: "وردي ترابي", hex: "#B5656B" },
+        { value: "أحمر كلاسيكي", hex: "#B3202C" },
+        { value: "نيود دافئ", hex: "#C98F78" },
+      ],
+    },
+  ],
+  variants: [
+    {
+      id: 1,
+      options: { color: "وردي ترابي" },
+      price: "8.95",
+      sale_price: null,
+      current_price: "8.95",
+      discount_percent: null,
+      stock_status: "out",
+      stock_left: null,
+      image_ids: [2, 1],
+    },
+    {
+      id: 2,
+      options: { color: "أحمر كلاسيكي" },
+      price: "9.95",
+      sale_price: "7.45",
+      current_price: "7.45",
+      discount_percent: 25,
+      stock_status: "low",
+      stock_left: 3,
+      image_ids: [3, 1],
+    },
+    {
+      id: 3,
+      options: { color: "نيود دافئ" },
+      price: "8.95",
+      sale_price: null,
+      current_price: "8.95",
+      discount_percent: null,
+      stock_status: "in_stock",
+      stock_left: null,
+      image_ids: [],
+    },
+  ],
+  attributes: [
+    {
+      key: "ingredients",
+      label: "المكونات",
+      type: "text",
+      unit: null,
+      value: "x",
+      display: "زبدة الشيا",
+    },
+  ],
+};
+
+/** Shaped like GET /products/demo-fresh-body-mist (simple, on sale, out of stock). */
+export const mist: ProductDetail = {
+  ...base,
+  id: 13,
+  slug: "demo-fresh-body-mist",
+  name: "بخاخ جسم منعش",
+  type: "simple",
+  brand: { id: 5, name: "مِسك", slug: "demo-misk" },
+  category: { id: 3, name: "عطور", slug: "perfumes" },
+  breadcrumb: [
+    { id: 2, name: "عناية وعطور", slug: "care" },
+    { id: 3, name: "عطور", slug: "perfumes" },
+  ],
+  image: urls("products/13/main"),
+  price: "4.95",
+  compare_at_price: "6.95",
+  discount_percent: 29,
+  is_on_sale: true,
+  in_stock: false,
+  description: "بخاخ خفيف ومنعش للاستعمال اليومي.",
+  images: [
+    {
+      id: 23,
+      alt_text: null,
+      variant_id: null,
+      color: null,
+      width: 800,
+      height: 800,
+      urls: urls("products/13/main"),
+    },
+  ],
+  regular_price: "6.95",
+  sale_price: "4.95",
+  current_price: "4.95",
+  stock_status: "out",
+  stock_left: null,
+};

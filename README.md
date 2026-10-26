@@ -3,7 +3,7 @@
 Customer website of the **Lamsa** (لمسة) beauty store. Arabic only for now, right to left.
 The backend is the FastAPI project in [`../lamsa-backend`](../lamsa-backend); its README describes the API, the auth flow, error codes and image sizes.
 
-> Status: phase 1. The global layout (desktop and mobile) and the home page reproduce the design prototype with real backend data; the other pages still render just their Arabic title.
+> Status: phase 2. The global layout, the home page and the catalog pages (category, brand, new, sale, search, brand grid, product) reproduce the design prototype with real backend data; cart, favorites, account and checkout still render just their Arabic title.
 
 ## Stack
 
@@ -58,7 +58,7 @@ src/
   lib/utils.ts              cn()
   proxy.ts                  Next.js 16 Proxy (formerly middleware) for /account and /checkout
 tests/                      Vitest unit tests
-e2e/                        Playwright tests (home, layout at 4 widths, backend down); e2e/screenshots/ is git-ignored
+e2e/                        Playwright tests (home, catalog, layout at 4 widths, backend down); e2e/screenshots/ is git-ignored
 scripts/start-standalone.mjs  Starts the standalone build with .env files and static assets (used by npm start)
 scripts/visual-compare.mjs    Screenshots the prototype and the site side by side
 scripts/bundle-report.mjs     Client JS per route from the Next.js bundle analyzer
@@ -168,9 +168,10 @@ Commit `src/lib/api/schema.d.ts` together with the code that uses the changed en
 npm run build
 npm run start -- --port 3300
 node scripts/visual-compare.mjs --base http://localhost:3300
+# Git Bash: MSYS_NO_PATHCONV=1 node scripts/visual-compare.mjs --base http://localhost:3300 --feature 2 --path /c/care
 ```
 
-This screenshots the prototype (feature 1, home, its frames expanded to full height) and the site at the same widths (1158 and 346px) and at 1280×800 and 390×844, in light and dark mode, into `e2e/screenshots/`. Compare the pairs and fix differences. `npm run test:e2e` also checks 360, 768, 1024 and 1440px: no horizontal scroll, tabbar only below 768px, desktop nav from 768px, nothing hidden behind the tabbar.
+This screenshots a prototype feature (`--feature`: 1 home, 2 care list → `/c/care`, 3 velvet lipstick → `/p/demo-velvet-lipstick`, 4 brands → `/brands`; its frames expanded to full height) and the site at the same widths (1158 and 346px) and at 1280×800 and 390×844, in light and dark mode, into `e2e/screenshots/feature-<n>/`. Compare the pairs and fix differences. `npm run test:e2e` also checks 360, 768, 1024 and 1440px: no horizontal scroll, tabbar only below 768px, desktop nav from 768px, nothing hidden behind the tabbar.
 
 **Known, intentional differences:** real product photos instead of the prototype drawings (the demo images carry their own light backgrounds, also in dark mode); brand logos inside the round mark, with the monogram only as a fallback; rail order follows the backend (newest first); category tiles show every top-level category with products, and the desktop columns avoid an orphan tile (1–4 tiles in one row, 5–8 in two balanced rows); no count badges, favorite state or user name until auth exists; the subtitle of the "new" fallback banner is static.
 
@@ -190,6 +191,54 @@ Pages never crash or go blank because of the backend:
 - **Backend down:** every page still returns 200 with the chrome and the fallbacks. In development a dismissible "الباك إند مش شغال" notice shows at the top.
 - Unknown routes use `not-found.tsx` (the prototype `.empty-st`).
 
+## Catalog pages
+
+Category `/c/[slug]`, brand `/brands/[slug]`, `/new`, `/sale` and `/search` share one list template; `/brands` is the brand grid and `/p/[slug]` the product page. Data comes only from `src/features/catalog/queries.ts`.
+
+**List template** (`src/features/catalog/components/list-results.tsx`, prototype `pList()`): list head with the count, one chips row (the category's first select attribute, then its child categories), the selects (brand, price, sort) and "المزيد من الفلاتر" with every facet, removable chips for the active filters, the grid, empty states and the pager (24 per page). The page passes a `scope` (`category`, `brand`, `new`, `sale` or `search`) that fixes the backend parameter of the page (`category`, `brand`, `is_new`, `on_sale`); the rest comes from the URL.
+
+**Filter URL format:** the backend parameter names, so a list URL maps one to one onto `GET /products`:
+
+| Parameter                 | Example                             | Notes                                                                                |
+| ------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ |
+| `brand` (repeatable)      | `?brand=demo-baity&brand=demo-ward` | not on a brand page                                                                  |
+| `min_price`, `max_price`  | `?min_price=5&max_price=14.99`      | the price select writes these (`lt5`, `5to15`, `gt15` are only accepted as `price=`) |
+| `attr.<key>` (repeatable) | `?attr.skin_type=جافة`              | select / multiselect / boolean attributes; numbers as `attr.<key>.min/.max`          |
+| `opt.<key>` (repeatable)  | `?opt.color=أحمر`                   | variant options (swatches, sizes)                                                    |
+| `in_stock`, `on_sale`     | `?in_stock=true`                    |                                                                                      |
+| `sort`                    | `?sort=price_asc`                   | `newest` (default), `price_asc`, `price_desc`; `relevance` on search                 |
+| `q`                       | `/search?q=عطر`                     | search only                                                                          |
+| page (in the path)        | `/c/care/page/2?brand=x`            | page 1 is the list path; search keeps `?page=2` (noindex)                            |
+| `filters=1`               | `?filters=1`                        | opens the filter form inline (the no-JS form of the sheet)                           |
+
+`parseFilters()` (`filters.ts`) validates and sorts the parameters, so one result has one URL and one cache key. If the backend rejects a parameter (`INVALID_FILTER`), the list drops it, retries (up to three times) and shows a notice. Every change is a navigation (`router.push` with `scroll: false`), so back and forward restore the filters.
+
+**Pages in the path:** page 2+ of a category, brand, new or sale list is `/…/page/[n]` (routes `c/[slug]/page/[n]`, `brands/[slug]/page/[n]`, `new/page/[n]`, `sale/page/[n]`; the views live next to the routes in `category-list.tsx`, `brand-list.tsx` and `flag-list.tsx`). So list metadata reads no search params and stays in the static `<head>` (metadata that reads `searchParams` is streamed into the body, which crawlers without JavaScript and Lighthouse do not see), every page has its own canonical, and pages 2+ are prerendered (up to 10 per list), including for visitors without JavaScript. `hrefWith()` builds these URLs; the old `?page=N` URLs and `…/page/1` redirect (308) in the Proxy.
+
+**Without JavaScript:** streamed Suspense content is revealed by an inline script, so the filtered result needs JavaScript. The category, brand, new and sale lists therefore use the unfiltered first page (`ListPreview`, part of the prerendered shell) as the Suspense fallback: without JavaScript the visitor sees products, links work, and the selects and the filter form below the results are plain GET forms (they navigate; the result stays unfiltered). On a hard load of a filtered URL with JavaScript, a tiny inline script dims the preview with a loading bar (`data-pending`, no layout shift) until the filtered result streams in. Client-side filter changes keep the previous result until the new one is ready. Search keeps the skeleton fallback.
+
+**Product page** (`/p/[slug]`, prototype `pProduct()`): a single client component (`product-purchase.tsx`) for the gallery, variants, quantity and add button. Thumbnails only with two or more images. A variant is selected with `?v=<variant id>`: the server renders that variant (price, availability, images), and changing it client-side updates the URL with `history.replaceState` (no navigation, no history entry). Without `?v` the first variant in stock is selected. The quantity stepper is bounded by `1..min(10, stock_left)`. The add button shows a toast until the cart exists (TODO).
+
+**404 status:** pages stream their static shell before `notFound()` can run, so an unknown slug would answer 200 (with noindex). `src/proxy.ts` therefore checks document requests to `/p/*`, `/c/*` and `/brands/*` against the backend detail endpoint, and list pages `…/page/[n]` against the product list (a page exists when it has items; 1.5 s timeout), and rewrites unknown ones to the not-found page with status 404. Invalid page segments (`/page/0`, `/page/x`) are a 404 without a backend call. Not checked: RSC requests (client navigations, where the page's own `notFound()` shows the not-found UI), router prefetches (`Next-Router-Prefetch`, `Next-Router-Segment-Prefetch`) and browser prefetches (`Purpose: prefetch`, `Sec-Purpose: prefetch…`). Results are cached in memory per server process (`existence.ts`: existing slugs 5 minutes, unknown slugs 60 seconds, at most 5,000 entries, least recently used evicted). Backend down, slow or 5xx: passed through, and the page shows its unavailable state.
+
+**SEO:** `generateMetadata` on every catalog page; canonicals drop filters and sort and keep only the page (`/c/care/page/2`); search is `noindex, follow`. JSON-LD: `Product` with an `Offer` (an `AggregateOffer` over the variants for variable products) and a `BreadcrumbList`. `sitemap.ts` lists the static pages, categories, brands (with their pages 2+, from the product counts) and products from the API (at most 50 pages of 100 products), cached for an hour, with the static pages as fallback when the backend is down.
+
+**Caching:** every query is a `"use cache"` function with a `cacheLife` and tags for on-demand revalidation:
+
+| Data                    | Lifetime | Tags                                                              |
+| ----------------------- | -------- | ----------------------------------------------------------------- |
+| category detail         | 300 s    | `categories`, `category:<slug>`                                   |
+| brand detail            | 300 s    | `brands`, `brand:<slug>`                                          |
+| product detail, related | 120 s    | `products`, `product:<slug>`                                      |
+| product lists, facets   | 45 s     | `products`, plus `category:<slug>` or `brand:<slug>` of the scope |
+| sitemap index           | 1 h      | `categories`, `brands`, `products`                                |
+
+A failed backend call is cached for about a second only (`settle()`), never for the full lifetime.
+
+**Page chrome:** every page renders `<PageChrome path title activeTab>` (`src/components/layout/page-chrome.tsx`): the mobile header with the real page title (product, category or brand name), and the active desktop tab (on product pages, the product's top-level category). An e2e test checks that every page renders exactly one mobile header.
+
+**Responsive check:** `node scripts/responsive-check.mjs --base http://localhost:3300` loads every page at 360×740, 390×844, 430×932, 844×390, 768×1024, 1024×768, 1280×800, 1440×900 and 1920×1080 (dark mode too at 390 and 1280). It reports horizontal scroll, elements outside the viewport, clipped labels, overlapping controls, the wrong chrome for the breakpoint, tap targets under 44px (counting `::before` hit areas), the filter sheet (side, inside the viewport, internal scroll) and 70-character names. Screenshots go to `e2e/screenshots/responsive/`.
+
 ## Performance
 
 Measure before changing anything:
@@ -203,8 +252,8 @@ node scripts/lighthouse-runs.mjs --runs 5  # mobile; add --desktop for desktop
 
 Rules that keep the client small:
 
-- **No client component per item.** Cards, tiles and images are server components; client code is limited to the navigation (active tab, mobile header, tabbar), the section error boundaries and the deferred Toaster. Use `clsx` (not `cn()`, which pulls tailwind-merge) in client components with static class lists.
-- **Fonts:** only the weights the prototype uses: IBM Plex Sans Arabic 400/500/600/700 (Arabic + Latin preloaded, as the body font) and Reem Kufi 600/700 (not preloaded). The desktop logo box has a fixed width so the display font swapping in moves nothing (CLS 0).
+- **No client component per item.** Cards, tiles and images are server components; client code is limited to the tabbar (active tab), the back button, the section error boundaries, the deferred Toaster, the list filter controls and the product purchase box. Use `clsx` (not `cn()`, which pulls tailwind-merge) in client components with static class lists.
+- **Fonts:** only the weights the prototype uses: IBM Plex Sans Arabic 400/500/600/700 (Arabic + Latin preloaded, as the body font) and Reem Kufi 600/700 (not preloaded). The logo is an SVG wordmark (`scripts/build-wordmark.py` shapes "لمسة" in Reem Kufi 700 with HarfBuzz and writes `src/components/shared/wordmark-data.ts`), so no font swap can move it (CLS 0).
 - **Above the fold:** the first two cards of the first rail and the first banner image are preloaded with high priority.
 
 **Lighthouse on a slow machine:** Lighthouse simulates a phone by slowing the host CPU 4×, assuming a host with a benchmark index of at least 1000. On a slower host it warns ("The tested device appears to have a slower CPU than Lighthouse expects") and the mobile score mostly reflects the machine. Check `environment.benchmarkIndex` in the report before comparing numbers, and compare builds on the same machine at the same time.

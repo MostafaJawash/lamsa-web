@@ -8,6 +8,13 @@ function route<T extends string>(href: Route<T>): Route {
   return href as Route;
 }
 
+/** The desktop tab of a top-level category, when the nav has one ("/c/makeup"). */
+export function tabForCategory(slug: string | null | undefined): Route | null {
+  if (!slug) return null;
+  const href = `/c/${slug}`;
+  return mainNav.find((item) => item.href === href)?.href ?? null;
+}
+
 export type NavItem = {
   labelKey: MessageKey;
   href: Route;

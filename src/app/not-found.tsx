@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PageChrome } from "@/components/layout/page-chrome";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SearchIcon } from "@/components/shared/icons";
 import { t } from "@/i18n";
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: t("errors.notFoundTitle") };
 /** Unknown routes: the prototype `.empty-st` inside the site chrome. */
 export default function NotFound() {
   return (
-    <div className="lm-pg">
+    <PageChrome path="/404">
       <EmptyState
         icon={<SearchIcon />}
         title={t("errors.notFoundTitle")}
@@ -21,6 +22,6 @@ export default function NotFound() {
           </Link>
         }
       />
-    </div>
+    </PageChrome>
   );
 }

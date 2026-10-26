@@ -1,6 +1,5 @@
 import Form from "next/form";
 import Link from "next/link";
-import { Suspense } from "react";
 
 import {
   BagIcon,
@@ -8,10 +7,10 @@ import {
   SearchIcon,
   UserIcon,
 } from "@/components/shared/icons";
-import { siteConfig } from "@/config/site";
+import { Wordmark } from "@/components/shared/wordmark";
 import { t } from "@/i18n";
 
-import { DesktopNav, DesktopNavView } from "./desktop-nav";
+import { DesktopNav } from "./desktop-nav";
 
 /**
  * Prototype `desktop()` header: `.d-bar` (logo, search, icons) and `.d-nav`.
@@ -22,7 +21,7 @@ export function DesktopHeader() {
     <header className="lm-dhead max-md:hidden">
       <div className="lm-dbar">
         <Link href="/" className="lm-logo" aria-label={t("pages.home")}>
-          {siteConfig.name}
+          <Wordmark />
         </Link>
         <Form action="/search" role="search" className="lm-search">
           <SearchIcon />
@@ -59,9 +58,7 @@ export function DesktopHeader() {
           </Link>
         </div>
       </div>
-      <Suspense fallback={<DesktopNavView active={null} />}>
-        <DesktopNav />
-      </Suspense>
+      <DesktopNav />
     </header>
   );
 }

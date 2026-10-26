@@ -52,7 +52,9 @@ test.describe("product cards on mobile", () => {
   test("badges never overlap the heart and wrap instead (146px rail and 2-column grid)", async ({
     page,
   }) => {
-    await page.goto("/");
+    // Wait for hydration: nodes injected into React-managed markup before it may be
+    // removed again.
+    await page.goto("/", { waitUntil: "networkidle" });
     await page.evaluate(() => document.fonts.ready);
 
     // Build every badge combination from a real card, in a rail and in a list grid.

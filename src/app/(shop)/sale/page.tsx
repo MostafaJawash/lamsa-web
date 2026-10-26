@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 
-import { PageTitle } from "@/components/layout/page-title";
-import { t } from "@/i18n";
+import {
+  FlagList,
+  flagListMetadata,
+} from "@/features/catalog/components/flag-list";
 
-export const metadata: Metadata = { title: t("pages.sale") };
+export const metadata: Metadata = flagListMetadata("sale", 1);
 
-export default function SalePage() {
-  return <PageTitle>{t("pages.sale")}</PageTitle>;
+/** "تنزيلات", page 1. */
+export default function SalePage({ searchParams }: PageProps<"/sale">) {
+  return <FlagList kind="sale" page={1} searchParams={searchParams} />;
 }

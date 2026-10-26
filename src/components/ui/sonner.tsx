@@ -1,41 +1,24 @@
 "use client";
 
 import { Toaster as Sonner, type ToasterProps } from "sonner";
-import {
-  CircleCheckIcon,
-  InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
-  Loader2Icon,
-} from "lucide-react";
 
+/**
+ * Toasts styled as the prototype `.toast`: an ink pill at the bottom center (18px from
+ * the bottom, 82px on mobile above the tabbar, as `.m-screen .toast`). Unstyled sonner
+ * with the `lm-toast` class from globals.css.
+ */
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
-      // Follows prefers-color-scheme, like the rest of the site (no theme switcher).
       theme="system"
       dir="rtl"
-      position="top-center"
+      position="bottom-center"
+      offset={{ bottom: 18 }}
+      mobileOffset={{ bottom: "calc(82px + env(safe-area-inset-bottom))" }}
       className="toaster group"
-      icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
-      }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
-        } as React.CSSProperties
-      }
       toastOptions={{
-        classNames: {
-          toast: "cn-toast",
-        },
+        unstyled: true,
+        classNames: { toast: "lm-toast" },
       }}
       {...props}
     />

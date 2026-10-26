@@ -106,3 +106,30 @@ export function XIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function TruckIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 6h11v10H3zM14 10h4l3 3v3h-7" />
+      <circle cx="7" cy="18" r="1.8" />
+      <circle cx="17.5" cy="18" r="1.8" />
+    </Svg>
+  );
+}
+
+export function StoreIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 9.5 5.5 4h13L20 9.5M4 9.5h16M4 9.5V20h16V9.5M9.5 20v-5h5v5" />
+    </Svg>
+  );
+}
+
+export function CashIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.6" />
+    </Svg>
+  );
+}

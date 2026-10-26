@@ -1,8 +1,11 @@
 // Visual comparison with the design prototype (see README "Design fidelity").
-// Screenshots the prototype (feature 1, home) and this site at matching widths, in light
-// and dark mode, into e2e/screenshots/ (git-ignored). Needs a running site.
+// Screenshots a prototype feature (1 home, 2 care list, 3 velvet lipstick, 4 brands, ...)
+// and the matching page of this site at matching widths, in light and dark mode, into
+// e2e/screenshots/<feature>/ (git-ignored). Needs a running site.
 //
-//   node scripts/visual-compare.mjs [--base http://localhost:3000] [--prototype <path>] [--path /]
+//   node scripts/visual-compare.mjs [--base http://localhost:3000] [--prototype <path>]
+//     [--feature 1] [--path /]
+// Git Bash: prefix with MSYS_NO_PATHCONV=1 so "--path /c/care" is not rewritten.
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -16,10 +19,11 @@ function arg(name, fallback) {
 
 const base = arg("base", "http://localhost:3000");
 const path = arg("path", "/");
+const feature = Number(arg("feature", "1"));
 const prototype = resolve(
   arg("prototype", "../lamsa-backend/docs/prototype/lamsa-presentation.html"),
 );
-const out = resolve("e2e/screenshots");
+const out = resolve("e2e/screenshots", `feature-${feature}`);
 mkdirSync(out, { recursive: true });
 
 /** Expands the prototype frames so their whole scrollable page is visible. */
@@ -52,7 +56,7 @@ async function shootPrototype(browser, scheme) {
     colorScheme: scheme,
   });
   await page.goto(pathToFileURL(prototype).href, { waitUntil: "networkidle" });
-  await page.locator('.feat[data-i="0"]').click();
+  await page.locator(`.feat[data-i="${feature - 1}"]`).click();
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(800);
   await expandPrototype(page);

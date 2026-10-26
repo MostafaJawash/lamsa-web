@@ -52,7 +52,11 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
       // Port 9 (discard) is closed: every backend call fails fast.
-      env: { API_BASE_URL: "http://127.0.0.1:9/api/v1" },
+      // Its own build directory, so it runs next to a developer's `npm run dev`.
+      env: {
+        API_BASE_URL: "http://127.0.0.1:9/api/v1",
+        NEXT_DIST_DIR: ".next-e2e",
+      },
     },
   ],
 });

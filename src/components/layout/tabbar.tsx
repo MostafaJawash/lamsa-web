@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 import {
   BagIcon,
@@ -14,6 +15,8 @@ import { navState, tabs, type TabKey } from "@/config/site";
 import { t } from "@/i18n";
 // clsx, not cn(): no tailwind-merge in the client bundle for static class lists.
 import { clsx as cn } from "clsx";
+
+import { recordVisit } from "./nav-history";
 
 const ICONS: Record<TabKey, React.ReactNode> = {
   home: <HomeIcon />,
@@ -42,7 +45,14 @@ export function TabbarView({ active }: { active: TabKey | null }) {
   );
 }
 
-/** Reads the pathname: render inside <Suspense> with `<TabbarView active={null} />`. */
+/**
+ * Reads the pathname: render inside <Suspense> with `<TabbarView active={null} />`.
+ * Always mounted, so it also counts visited pages for the back button (nav-history).
+ */
 export function Tabbar() {
-  return <TabbarView active={navState(usePathname()).tab} />;
+  const pathname = usePathname();
+  useEffect(() => {
+    recordVisit();
+  }, [pathname]);
+  return <TabbarView active={navState(pathname).tab} />;
 }

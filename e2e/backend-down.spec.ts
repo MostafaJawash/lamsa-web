@@ -59,3 +59,24 @@ test("categories page renders every tile without the backend", async ({
   expect(response?.status()).toBe(200);
   await expect(page.locator(".lm-cat-tile")).toHaveCount(6);
 });
+
+const catalogPages: [string, string][] = [
+  ["/c/care", "ما قدرنا نجيب المنتجات هلأ"],
+  ["/brands/demo-baity", "ما قدرنا نجيب المنتجات هلأ"],
+  ["/p/demo-velvet-lipstick", "ما قدرنا نجيب هالمنتج هلأ"],
+  // The 404 check in the proxy passes through when the backend is down.
+  ["/p/nope", "ما قدرنا نجيب هالمنتج هلأ"],
+  ["/new", "ما قدرنا نجيب المنتجات هلأ"],
+  ["/sale", "ما قدرنا نجيب المنتجات هلأ"],
+  ["/search?q=عطر", "ما قدرنا نجيب المنتجات هلأ"],
+  ["/brands", "ما قدرنا نجيب المنتجات هلأ"],
+];
+
+for (const [path, text] of catalogPages) {
+  test(`${path} returns 200 with an unavailable state`, async ({ page }) => {
+    const response = await page.goto(path, { timeout: 150_000 });
+    expect(response?.status()).toBe(200);
+    await expect(page.getByText(text).first()).toBeVisible();
+    await expect(page.locator(".lm-mhead")).toHaveCount(1);
+  });
+}

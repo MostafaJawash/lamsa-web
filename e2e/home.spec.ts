@@ -83,25 +83,17 @@ test.describe("desktop chrome", () => {
   });
 
   test("marks the active category tab", async ({ page }) => {
+    // The page marks its tab with the accent underline (PageChrome); others stay plain.
+    const accent = /rgb\(184, 23, 78\)/;
     await page.goto("/new");
-    const nav = page
-      .getByRole("navigation", { name: "القائمة الرئيسية" })
-      .first();
-    await expect(nav.getByRole("link", { name: "جديد" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    await expect(nav.getByRole("link", { name: "جديد" })).toHaveClass(/\bon\b/);
-    await expect(
-      nav.getByRole("link", { name: "تنزيلات" }),
-    ).not.toHaveAttribute("aria-current");
+    const tab = (href: string) => page.locator(`.lm-dnav a[href="${href}"]`);
+    await expect(tab("/new")).toHaveCSS("border-bottom-color", accent);
+    await expect(tab("/sale")).not.toHaveCSS("border-bottom-color", accent);
 
-    await nav.getByRole("link", { name: "ماركات" }).click();
+    await tab("/brands").click();
     await expect(page).toHaveURL(/\/brands$/);
-    await expect(nav.getByRole("link", { name: "ماركات" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    await expect(tab("/brands")).toHaveCSS("border-bottom-color", accent);
+    await expect(tab("/new")).not.toHaveCSS("border-bottom-color", accent);
   });
 });
 

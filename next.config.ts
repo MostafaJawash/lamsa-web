@@ -16,6 +16,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // A second dev server (the e2e "backend-down" project) needs its own build directory;
+  // builds and npm start always use the default .next.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   output: "standalone",
   reactCompiler: true,
   typedRoutes: true,

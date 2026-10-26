@@ -5,7 +5,6 @@ import { SilhouetteSymbol } from "@/components/shared/product-art";
 import { BackendNotice } from "./backend-notice";
 import { DesktopHeader } from "./desktop-header";
 import { Footer } from "./footer";
-import { MobileHeader, MobileHeaderFallback } from "./mobile-header";
 import { Tabbar, TabbarView } from "./tabbar";
 
 /**
@@ -13,8 +12,9 @@ import { Tabbar, TabbarView } from "./tabbar";
  * (m-head + fixed tabbar), from it the desktop site (d-bar + d-nav + d-foot). Both are
  * in the HTML; CSS shows one, so nothing depends on the user agent.
  *
- * The pathname-aware parts (active tab, mobile title) sit in <Suspense>: static routes
- * prerender them complete; dynamic routes show a same-size fallback until hydration.
+ * Per-page chrome (mobile header with the real title, desktop active tab, the content
+ * box) comes from each page through `PageChrome`. The tabbar reads the pathname inside
+ * <Suspense> (same-size fallback on dynamic routes).
  *
  * Keep it static: session-dependent UI (account name, badges) must render inside
  * <Suspense> once auth exists.
@@ -29,9 +29,6 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         </Suspense>
       ) : null}
       <DesktopHeader />
-      <Suspense fallback={<MobileHeaderFallback />}>
-        <MobileHeader />
-      </Suspense>
       <main id="main" className="lm-main">
         {children}
       </main>

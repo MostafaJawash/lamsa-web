@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { PageChrome } from "@/components/layout/page-chrome";
 import { EmptyState } from "@/components/shared/empty-state";
 import { BagIcon, SearchIcon } from "@/components/shared/icons";
 import { Section } from "@/components/shared/section";
@@ -35,7 +36,7 @@ const HOME_PATH = "/";
 export default function HomePage() {
   const failed = <p className="sr-only">{t("home.sectionFailed")}</p>;
   return (
-    <>
+    <PageChrome path="/">
       <h1 className="sr-only">{t("home.title")}</h1>
 
       {/* Mobile only: fake search field + category chips */}
@@ -124,6 +125,6 @@ export default function HomePage() {
           <BrandsSection />
         </Suspense>
       </SectionBoundary>
-    </>
+    </PageChrome>
   );
 }
