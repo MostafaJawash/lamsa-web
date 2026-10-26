@@ -1,15 +1,34 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { PageChrome } from "@/components/layout/page-chrome";
-import { PageTitle } from "@/components/layout/page-title";
+import { AuthHeader } from "@/features/auth/components/auth-header";
+import { LoginForm } from "@/features/auth/components/login-form";
+import { googleMode } from "@/features/auth/google";
 import { t } from "@/i18n";
+import { safeNext } from "@/lib/auth/next-param";
 
 export const metadata: Metadata = { title: t("pages.login") };
 
-export default function LoginPage() {
+/** Prototype `.note` when the visitor came from checkout ("سجّل دخولك لتكمّل طلبك"). */
+async function CheckoutNote({
+  searchParams,
+}: {
+  searchParams: PageProps<"/login">["searchParams"];
+}) {
+  const { next } = await searchParams;
+  if (!safeNext(next).startsWith("/checkout")) return null;
+  return <p className="lm-note">{t("auth.login.checkoutNote")}</p>;
+}
+
+export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <PageChrome path="/login" width="narrow">
-      <PageTitle>{t("pages.login")}</PageTitle>
+      <AuthHeader title={t("pages.login")} lead={t("auth.login.lead")} />
+      <LoginForm google={googleMode()} />
+      <Suspense fallback={null}>
+        <CheckoutNote searchParams={searchParams} />
+      </Suspense>
     </PageChrome>
   );
 }

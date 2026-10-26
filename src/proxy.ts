@@ -1,144 +1,233 @@
+import type { Route } from "next";
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
   catalogRoute,
   createExistenceChecker,
 } from "@/features/catalog/existence";
+import { createApiClient } from "@/lib/api/client";
+import { needsRefresh } from "@/lib/auth/jwt";
+import { safeNext, withNext } from "@/lib/auth/next-param";
+import {
+  CHANGE_PASSWORD_PATH,
+  COMPLETE_PROFILE_PATH,
+  isGuestOnlyPath,
+  isPasswordChangePath,
+  isProtectedPath,
+  LOGIN_PATH,
+} from "@/lib/auth/paths";
+import { refresher } from "@/lib/auth/refresh";
+import {
+  ACCESS_TOKEN_COOKIE,
+  clearedSessionCookieSpecs,
+  PASSWORD_CHANGE_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  sessionCookieSpecs,
+  SIGNUP_COOKIE,
+  type CookieSpec,
+} from "@/lib/auth/session";
 import { env } from "@/lib/env";
+import {
+  clientContextFrom,
+  proxyRequestId,
+  REQUEST_ID_HEADER,
+  type ClientContext,
+} from "@/lib/http/client-context";
 
 /**
- * Next.js 16 Proxy (the successor of middleware.ts).
+ * Next.js 16 Proxy (the successor of middleware.ts). Runs for pages and RSC requests,
+ * never for static files, images or prefetches (see `config.matcher`).
  *
- * Catalog document requests (see `catalogRoute` in existence.ts):
- * - `/p/*`, `/c/*`, `/brands/*` with an unknown slug, and list pages `…/page/[n]` past the
- *   end, are rewritten to the not-found page with a real 404 status (checked against the
- *   backend: 1.5 s timeout, cached per process). Backend down or slow: passed through,
- *   and the page shows its usual state (200, noindex on not-found).
- * - the old `?page=N` list URLs and `…/page/1` redirect (308) to the path form.
- * Prefetches and client-side navigations (RSC requests) are not matched: there the
- * page's own `notFound()` shows the not-found UI and no status is visible.
- *
- * TODO(auth): /account and /checkout: optimistic check only. If neither session cookie
- * (see src/lib/auth/session.ts) is present, redirect to /login?next=<path>. Never call
- * the backend or verify tokens there; the real check happens where the data is read.
+ * 1. Stamps X-Request-ID on the forwarded request (passed on to the backend).
+ * 2. Session (GET/HEAD): when the access cookie is missing or expires within 60 s and
+ *    a refresh cookie exists, POST /auth/refresh (single-flight per refresh token, see
+ *    src/lib/auth/refresh.ts), set both new cookies on the response AND on the
+ *    forwarded request, so server components see the new token in this same request.
+ *    Rejected (TOKEN_REUSED / TOKEN_INVALID / TOKEN_EXPIRED): clear the cookies and
+ *    continue as a guest. Backend down: continue as is.
+ * 3. Gates (optimistic, from the cookies; pages re-check with requireUser()):
+ *    - /account/*, /checkout/* without a session → /login?next=<path>;
+ *    - temporary password (`lamsa_pwc`) → /account/change-password?next=<path>;
+ *    - /login, /register with a valid session (GET /users/me) → next or "/";
+ *    - /complete-profile without the Google signup cookie → /login.
+ * 4. Catalog document requests (see `catalogRoute` in existence.ts): unknown slugs and
+ *    list pages past the end get a real 404 (checked against the backend: 1.5 s
+ *    timeout, cached per process; backend down → passed through), and the old
+ *    `?page=N` URLs and `…/page/1` redirect (308). Only for documents
+ *    (`Sec-Fetch-Dest: document`, or no such header: curl, bots); client navigations
+ *    (RSC) are not checked, there the page's own `notFound()` shows the not-found UI.
+ *    Next.js strips the RSC headers from `request` here, hence Sec-Fetch-Dest.
  */
 const existence = createExistenceChecker({ apiBaseUrl: env.API_BASE_URL });
 
 /** Matches no route, so Next.js renders the not-found page with status 404. */
 const NOT_FOUND_PATH = "/_lamsa/not-found";
 
-export async function proxy(request: NextRequest): Promise<NextResponse> {
-  if (request.method !== "GET" && request.method !== "HEAD")
-    return NextResponse.next();
-  const route = catalogRoute(
-    request.nextUrl.pathname,
-    request.nextUrl.searchParams,
-  );
-  if (!route) return NextResponse.next();
-  if (route.action === "redirect")
-    return NextResponse.redirect(new URL(route.location, request.url), 308);
-  if (
-    route.action === "check" &&
-    (await existence.check(route.check)) !== "missing"
-  )
-    return NextResponse.next();
-  return NextResponse.rewrite(new URL(NOT_FOUND_PATH, request.url), {
-    status: 404,
-  });
+const VERIFY_TIMEOUT_MS = 1_500;
+
+const CATALOG_CHECK_HEADER = "x-lamsa-catalog-check";
+
+type SessionView = {
+  accessToken: string | null;
+  /** A refresh cookie survives (possibly unverified when the backend is down). */
+  hasRefresh: boolean;
+  mustChangePassword: boolean;
+};
+
+/** Cookie changes for the response, mirrored on the forwarded request. */
+class CookieChanges {
+  readonly specs: CookieSpec[] = [];
+
+  constructor(private readonly request: NextRequest) {}
+
+  apply(specs: CookieSpec[]) {
+    for (const spec of specs) {
+      this.specs.push(spec);
+      if (spec.options.maxAge > 0)
+        this.request.cookies.set(spec.name, spec.value);
+      else this.request.cookies.delete(spec.name);
+    }
+  }
+
+  writeTo(response: NextResponse): NextResponse {
+    for (const spec of this.specs)
+      response.cookies.set(spec.name, spec.value, spec.options);
+    return response;
+  }
 }
 
-// Document requests only (no RSC payload, router prefetch or browser prefetch). The
-// matcher must be literal (statically analyzed), hence the repetition.
+async function syncSession(
+  request: NextRequest,
+  client: ClientContext,
+  changes: CookieChanges,
+): Promise<SessionView> {
+  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value || null;
+  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value || null;
+  const mustChangePassword =
+    request.cookies.get(PASSWORD_CHANGE_COOKIE)?.value === "1";
+  const current = {
+    accessToken,
+    hasRefresh: !!refreshToken,
+    mustChangePassword,
+  };
+  if (!refreshToken || !needsRefresh(accessToken)) return current;
+
+  const outcome = await refresher.refresh(refreshToken, client);
+  if (outcome.kind === "refreshed") {
+    changes.apply(sessionCookieSpecs(outcome.pair));
+    return {
+      accessToken: outcome.pair.access_token,
+      hasRefresh: true,
+      mustChangePassword: outcome.pair.user.must_change_password,
+    };
+  }
+  if (outcome.kind === "rejected") {
+    changes.apply(clearedSessionCookieSpecs());
+    return { accessToken: null, hasRefresh: false, mustChangePassword: false };
+  }
+  return current;
+}
+
+/** Is this access token still accepted? ("unknown": backend down or slow). */
+async function verifyAccess(
+  accessToken: string,
+  client: ClientContext,
+): Promise<"valid" | "invalid" | "unknown"> {
+  try {
+    const { response } = await createApiClient({ accessToken, client }).GET(
+      "/users/me",
+      { signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS) },
+    );
+    if (response.ok) return "valid";
+    return response.status === 401 || response.status === 403
+      ? "invalid"
+      : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function isDocumentRequest(request: NextRequest): boolean {
+  const dest = request.headers.get("sec-fetch-dest");
+  return dest === null || dest === "document";
+}
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const trustProxy = env.WEB_TRUST_PROXY_HEADERS;
+  const requestId = proxyRequestId(request.headers, trustProxy);
+  const client = {
+    ...clientContextFrom(request.headers, trustProxy),
+    requestId,
+  };
+  const changes = new CookieChanges(request);
+
+  const forward = (): { request: { headers: Headers } } => {
+    const headers = new Headers(request.headers);
+    headers.set(REQUEST_ID_HEADER, requestId);
+    return { request: { headers } };
+  };
+  const redirectTo = (location: string, status = 307) =>
+    changes.writeTo(
+      NextResponse.redirect(new URL(location, request.url), status),
+    );
+
+  if (request.method !== "GET" && request.method !== "HEAD")
+    return NextResponse.next(forward());
+
+  const { pathname, search, searchParams } = request.nextUrl;
+  const here = `${pathname}${search}`;
+  const session = await syncSession(request, client, changes);
+  const hasSession = !!session.accessToken || session.hasRefresh;
+
+  if (isProtectedPath(pathname) && !hasSession)
+    return redirectTo(withNext(LOGIN_PATH, here));
+
+  if (
+    hasSession &&
+    session.mustChangePassword &&
+    !isPasswordChangePath(pathname)
+  )
+    return redirectTo(withNext(CHANGE_PASSWORD_PATH, here));
+
+  if (pathname === COMPLETE_PROFILE_PATH && !request.cookies.has(SIGNUP_COOKIE))
+    return redirectTo(LOGIN_PATH);
+
+  if (isGuestOnlyPath(pathname) && session.accessToken) {
+    const verdict = await verifyAccess(session.accessToken, client);
+    if (verdict === "valid")
+      return redirectTo(safeNext(searchParams.get("next")) as Route);
+    if (verdict === "invalid") changes.apply(clearedSessionCookieSpecs());
+  }
+
+  const route = isDocumentRequest(request)
+    ? catalogRoute(pathname, searchParams)
+    : null;
+  if (route?.action === "redirect") return redirectTo(route.location, 308);
+  if (route) {
+    // "not-found": an invalid list page (…/page/0); "check": ask the backend.
+    const result =
+      route.action === "check" ? await existence.check(route.check) : "missing";
+    const response =
+      result === "missing"
+        ? NextResponse.rewrite(new URL(NOT_FOUND_PATH, request.url), {
+            ...forward(),
+            status: 404,
+          })
+        : NextResponse.next(forward());
+    // Which requests were checked (e2e: documents yes, client navigations no).
+    response.headers.set(CATALOG_CHECK_HEADER, result);
+    return changes.writeTo(response);
+  }
+  return changes.writeTo(NextResponse.next(forward()));
+}
+
+// Pages and RSC requests; no static files, images, API routes or prefetches (router,
+// segment and browser prefetches). The matcher must be literal (statically analyzed).
 export const config = {
   matcher: [
-    "/account/:path*",
-    "/checkout/:path*",
     {
-      source: "/p/:slug",
+      source: "/((?!_next/|api/|.*\\.[A-Za-z0-9]+$).*)",
       missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/c/:slug",
-      missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/brands/:slug",
-      missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/c/:slug/page/:n",
-      missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/brands/:slug/page/:n",
-      missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/new/page/:n",
-      missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/sale/page/:n",
-      missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/new",
-      has: [{ type: "query", key: "page" }],
-      missing: [
-        { type: "header", key: "rsc" },
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "next-router-segment-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-        { type: "header", key: "sec-purpose", value: "prefetch.*" },
-      ],
-    },
-    {
-      source: "/sale",
-      has: [{ type: "query", key: "page" }],
-      missing: [
-        { type: "header", key: "rsc" },
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "next-router-segment-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

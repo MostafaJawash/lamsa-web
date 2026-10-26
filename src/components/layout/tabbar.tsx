@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
@@ -26,14 +27,23 @@ const ICONS: Record<TabKey, React.ReactNode> = {
   account: <UserIcon />,
 };
 
-/** Prototype `.tabbar`: fixed bottom navigation on mobile, active tab in accent. */
-export function TabbarView({ active }: { active: TabKey | null }) {
+/**
+ * Prototype `.tabbar`: fixed bottom navigation on mobile, active tab in accent.
+ * "حسابي" goes to /account when signed in, /login for guests (`accountHref`).
+ */
+export function TabbarView({
+  active,
+  accountHref,
+}: {
+  active: TabKey | null;
+  accountHref: Route;
+}) {
   return (
     <nav className="lm-tabbar md:hidden" aria-label={t("layout.tabbar")}>
       {tabs.map((tab) => (
         <Link
           key={tab.key}
-          href={tab.href}
+          href={tab.key === "account" ? accountHref : tab.href}
           className={cn(tab.key === active && "on")}
           aria-current={tab.key === active ? "page" : undefined}
         >
@@ -46,13 +56,16 @@ export function TabbarView({ active }: { active: TabKey | null }) {
 }
 
 /**
- * Reads the pathname: render inside <Suspense> with `<TabbarView active={null} />`.
+ * Reads the pathname: rendered by `TabbarLive` (which reads the session) inside
+ * <Suspense> with `<TabbarView active={null} accountHref="/account" />`.
  * Always mounted, so it also counts visited pages for the back button (nav-history).
  */
-export function Tabbar() {
+export function Tabbar({ accountHref }: { accountHref: Route }) {
   const pathname = usePathname();
   useEffect(() => {
     recordVisit();
   }, [pathname]);
-  return <TabbarView active={navState(pathname).tab} />;
+  return (
+    <TabbarView active={navState(pathname).tab} accountHref={accountHref} />
+  );
 }

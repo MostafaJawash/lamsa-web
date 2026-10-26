@@ -1,20 +1,19 @@
 import Form from "next/form";
 import Link from "next/link";
+import { Suspense } from "react";
 
-import {
-  BagIcon,
-  HeartIcon,
-  SearchIcon,
-  UserIcon,
-} from "@/components/shared/icons";
+import { BagIcon, HeartIcon, SearchIcon } from "@/components/shared/icons";
 import { Wordmark } from "@/components/shared/wordmark";
 import { t } from "@/i18n";
 
+import { AccountEntry, AccountEntryLive } from "./account-entry";
 import { DesktopNav } from "./desktop-nav";
 
 /**
  * Prototype `desktop()` header: `.d-bar` (logo, search, icons) and `.d-nav`.
- * Count badges come with the cart/favorites features (see `CountBadge`).
+ * Count badges come with the cart/favorites features (see `CountBadge`). The account
+ * entry is the only session-dependent part: a small <Suspense> hole whose fallback is
+ * the guest entry, so the rest of the header stays in the static shell.
  */
 export function DesktopHeader() {
   return (
@@ -52,10 +51,9 @@ export function DesktopHeader() {
           >
             <BagIcon />
           </Link>
-          <Link href="/account" className="lm-icon-btn">
-            <UserIcon />
-            <span>{t("layout.login")}</span>
-          </Link>
+          <Suspense fallback={<AccountEntry firstName={null} />}>
+            <AccountEntryLive />
+          </Suspense>
         </div>
       </div>
       <DesktopNav />

@@ -13,6 +13,15 @@ const serverSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
+  /**
+   * true only behind our own Nginx, which sets X-Real-IP / X-Forwarded-For: then the
+   * visitor IP comes from those headers. false (development): always 127.0.0.1, and
+   * whatever the browser sends is ignored.
+   */
+  WEB_TRUST_PROXY_HEADERS: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema> & PublicEnv;
@@ -21,6 +30,7 @@ function parseServerEnv(): ServerEnv {
   const result = serverSchema.safeParse({
     API_BASE_URL: process.env.API_BASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    WEB_TRUST_PROXY_HEADERS: process.env.WEB_TRUST_PROXY_HEADERS || undefined,
   });
   if (!result.success) {
     const issues = result.error.issues.map((issue) => ({

@@ -11,8 +11,13 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
   },
-  // TODO: add a Content-Security-Policy (nonce-based, see the Next.js CSP guide)
-  // once the Google sign-in and analytics origins are known.
+  // TODO: add a Content-Security-Policy (nonce-based, see the Next.js CSP guide) once
+  // the analytics origins are known. Google Identity Services (/login, /register) needs:
+  //   script-src https://accounts.google.com/gsi/client
+  //   frame-src https://accounts.google.com/gsi/
+  //   connect-src https://accounts.google.com/gsi/
+  //   style-src https://accounts.google.com/gsi/style
+  // and no COOP stricter than "same-origin-allow-popups" (the sign-in popup).
 ];
 
 const nextConfig: NextConfig = {

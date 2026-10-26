@@ -279,6 +279,18 @@
   .lm-icon-btn:hover {
     background: var(--lamsa-surface-2);
   }
+  /*
+   * Header account entry: the label keeps the width of "تسجيل الدخول" (80.6px at 14px),
+   * so the streamed first name never moves the header (CLS 0); long names get "…".
+   */
+  .lm-acct span {
+    display: inline-block;
+    inline-size: 81px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: start;
+  }
   /* .badge */
   .lm-badge {
     position: absolute;
@@ -503,6 +515,211 @@
   .lm-auth {
     max-width: 380px;
     margin: 12px auto 0;
+  }
+  /*
+   * The 40px logo of .auth: the prototype's text logo hangs 6px below the baseline
+   * (line box 42.6px); the SVG wordmark sits on it, so move it down the same 0.15em.
+   */
+  .lm-auth > .lm-logo {
+    vertical-align: -0.15em;
+  }
+  /* .auth h2, .auth>p (the page heading is an h1 here) */
+  .lm-auth h1 {
+    font-family: var(--lamsa-display);
+    font-weight: 600;
+    font-size: 28px;
+    margin: 12px 0 4px;
+  }
+  .lm-auth > p {
+    margin: 0 0 18px;
+  }
+  /* .muted, .hint, .hint.ok, .err, .link */
+  .lm-muted {
+    color: var(--lamsa-muted);
+  }
+  .lm-hint {
+    font-size: 13px;
+    color: var(--lamsa-muted);
+    margin: 6px 0 0;
+  }
+  .lm-hint.ok {
+    color: var(--lamsa-ok);
+  }
+  .lm-err {
+    color: var(--lamsa-danger);
+    font-size: 14px;
+    margin: 8px 0;
+  }
+  .lm-link {
+    background: none;
+    border: 0;
+    padding: 4px 0;
+    color: var(--lamsa-accent);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  /* .fld */
+  .lm-fld {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: var(--lamsa-muted);
+  }
+  /* .fld errors (not in the prototype): the .err text and a danger border */
+  .lm-fld .lm-err {
+    margin: 0;
+  }
+  .lm-err > p {
+    margin: 0;
+  }
+  .lm-err > * + * {
+    margin-top: 4px;
+  }
+  .lm-inp[aria-invalid="true"] {
+    border-color: var(--lamsa-danger);
+  }
+  /* .ph-row, .ph-row select, .ph-row input */
+  .lm-ph-row {
+    display: flex;
+    gap: 8px;
+  }
+  .lm-ph-row select {
+    width: 96px;
+    flex: none;
+    padding: 0 8px;
+    direction: ltr;
+  }
+  .lm-ph-row input {
+    direction: ltr;
+    text-align: start;
+  }
+  /* Password with the show/hide toggle (not in the prototype): .inp + an .icon-btn */
+  .lm-pw {
+    position: relative;
+  }
+  .lm-pw .lm-inp {
+    padding-inline-end: 50px;
+  }
+  .lm-pw .lm-icon-btn {
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-end: 3px;
+    color: var(--lamsa-muted);
+  }
+  /* Password rule hints: .hint per rule, .hint.ok when met */
+  .lm-rules {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+  }
+  .lm-rules .lm-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+  }
+  .lm-rules .lm-ic {
+    width: 14px;
+    height: 14px;
+  }
+  /* .btn.block, .btn.google */
+  .lm-btn.block {
+    width: 100%;
+  }
+  .lm-btn.google {
+    background: var(--lamsa-surface);
+    border-color: var(--lamsa-line);
+    color: var(--lamsa-ink);
+  }
+  /* The Google Identity Services button (Google's own styling): its height reserved. */
+  .lm-gis {
+    display: flex;
+    justify-content: center;
+    min-height: 44px;
+  }
+  /* .or */
+  .lm-or {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--lamsa-muted);
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .lm-or::before,
+  .lm-or::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--lamsa-line);
+  }
+  /* .note */
+  .lm-note {
+    background: var(--lamsa-accent-soft);
+    color: var(--lamsa-ink);
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-top: 16px;
+  }
+  /* Links under the auth forms */
+  .lm-auth-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--lamsa-muted);
+  }
+  /* .profile, .avatar, .profile .who, .profile h2, .profile .meta */
+  .lm-profile {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 18px;
+    border: 1px solid var(--lamsa-line);
+    border-radius: 18px;
+    background: var(--lamsa-surface);
+    flex-wrap: wrap;
+  }
+  .lm-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--lamsa-accent-soft);
+    color: var(--lamsa-accent);
+    display: grid;
+    place-items: center;
+    font-family: var(--lamsa-display);
+    font-size: 24px;
+    font-weight: 700;
+    flex: none;
+  }
+  .lm-profile .who {
+    flex: 1;
+    min-width: 150px;
+  }
+  .lm-profile h2 {
+    margin: 0;
+    font-size: 20px;
+    /* The prototype's browser default for h2 (Tailwind's reset removes it). */
+    font-weight: 700;
+  }
+  .lm-profile .meta {
+    font-size: 14px;
+    color: var(--lamsa-muted);
+  }
+  .lm-profile .acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   /* .chips, .chip(.on/.sale) */

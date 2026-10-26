@@ -5,7 +5,8 @@ import { SilhouetteSymbol } from "@/components/shared/product-art";
 import { BackendNotice } from "./backend-notice";
 import { DesktopHeader } from "./desktop-header";
 import { Footer } from "./footer";
-import { Tabbar, TabbarView } from "./tabbar";
+import { TabbarView } from "./tabbar";
+import { TabbarLive } from "./tabbar-live";
 
 /**
  * Site chrome for every page. Breakpoint 768px: below it the prototype mobile app
@@ -16,8 +17,9 @@ import { Tabbar, TabbarView } from "./tabbar";
  * box) comes from each page through `PageChrome`. The tabbar reads the pathname inside
  * <Suspense> (same-size fallback on dynamic routes).
  *
- * Keep it static: session-dependent UI (account name, badges) must render inside
- * <Suspense> once auth exists.
+ * Keep it static: session-dependent UI renders inside small <Suspense> holes whose
+ * fallback is the guest version at the same size (the desktop account entry, the
+ * tabbar's account link), so the shell is prerendered and nothing moves.
  */
 export function SiteShell({ children }: { children: React.ReactNode }) {
   return (
@@ -33,8 +35,8 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
-      <Suspense fallback={<TabbarView active={null} />}>
-        <Tabbar />
+      <Suspense fallback={<TabbarView active={null} accountHref="/account" />}>
+        <TabbarLive />
       </Suspense>
     </>
   );

@@ -1,5 +1,6 @@
 // Visual comparison with the design prototype (see README "Design fidelity").
-// Screenshots a prototype feature (1 home, 2 care list, 3 velvet lipstick, 4 brands, ...)
+// Screenshots a prototype feature (1 home, 2 care list, 3 velvet lipstick, 4 brands,
+// 7 account: the login screen while signed out → --path /login, ...)
 // and the matching page of this site at matching widths, in light and dark mode, into
 // e2e/screenshots/<feature>/ (git-ignored). Needs a running site.
 //

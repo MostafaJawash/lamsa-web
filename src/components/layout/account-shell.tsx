@@ -6,8 +6,8 @@ import { t } from "@/i18n";
 /**
  * Account pages: the account navigation next to the page (placeholder; its design comes
  * with the account feature). Rendered inside `PageChrome` by each account page.
- * TODO: the auth check (redirect to /login) belongs in the pages' data access, not only
- * in src/proxy.ts. Session reads must render inside <Suspense>.
+ * Auth: src/proxy.ts redirects guests optimistically from the cookies; pages that read
+ * user data call requireUser() (src/lib/auth/user.ts) inside <Suspense>.
  */
 export function AccountShell({ children }: { children: React.ReactNode }) {
   return (

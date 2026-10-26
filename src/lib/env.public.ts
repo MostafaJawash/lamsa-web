@@ -9,6 +9,12 @@
 export type PublicEnv = {
   NEXT_PUBLIC_SITE_URL: string;
   NEXT_PUBLIC_MEDIA_BASE_URL: string;
+  /** Google Identity Services web client id; empty: no Google button (dev button in development). */
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: string;
+  /** Store phone for "forgot password" (international format, e.g. +49 30 1234567); optional. */
+  NEXT_PUBLIC_SUPPORT_PHONE: string;
+  /** WhatsApp number, digits with country code (e.g. 4915112345678); optional. */
+  NEXT_PUBLIC_SUPPORT_WHATSAPP: string;
 };
 
 export type EnvIssue = { name: string; message: string };
@@ -54,7 +60,19 @@ function parsePublicEnv(): PublicEnv {
   if (typeof site !== "string" || typeof media !== "string") {
     throw new Error(formatEnvError(issues, "public"));
   }
-  return { NEXT_PUBLIC_SITE_URL: site, NEXT_PUBLIC_MEDIA_BASE_URL: media };
+  return {
+    NEXT_PUBLIC_SITE_URL: site,
+    NEXT_PUBLIC_MEDIA_BASE_URL: media,
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: (
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""
+    ).trim(),
+    NEXT_PUBLIC_SUPPORT_PHONE: (
+      process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? ""
+    ).trim(),
+    NEXT_PUBLIC_SUPPORT_WHATSAPP: (
+      process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? ""
+    ).replace(/\D/g, ""),
+  };
 }
 
 export const publicEnv: PublicEnv = parsePublicEnv();

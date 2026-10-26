@@ -3,7 +3,7 @@
 Customer website of the **Lamsa** (لمسة) beauty store. Arabic only for now, right to left.
 The backend is the FastAPI project in [`../lamsa-backend`](../lamsa-backend); its README describes the API, the auth flow, error codes and image sizes.
 
-> Status: phase 2. The global layout, the home page and the catalog pages (category, brand, new, sale, search, brand grid, product) reproduce the design prototype with real backend data; cart, favorites, account and checkout still render just their Arabic title.
+> Status: phase 3. The global layout, the home page and the catalog pages (category, brand, new, sale, search, brand grid, product) reproduce the design prototype with real backend data. Authentication works end to end (phone + password, Google, silent refresh, forced password change, logout), and the account page shows the profile card. Cart, favorites, the other account pages and checkout still render just their Arabic title.
 
 ## Stack
 
@@ -30,7 +30,6 @@ src/
     (auth)/                 Login, register, complete-profile (Google onboarding) in the narrow .auth block
     (account)/account/      Account pages with the account navigation
     checkout/               Checkout and the success page
-    api/auth/               BFF route handlers (refresh, logout); skeletons returning 501
     layout.tsx              <html lang="ar" dir="rtl">, fonts, metadata, site chrome (SiteShell), Toaster
     globals.css             Tailwind, design tokens (light and dark) and the prototype component classes (lm-*)
     not-found / error / global-error, sitemap.ts, robots.ts, manifest.ts
@@ -49,16 +48,18 @@ src/
   lib/api/result.ts         QueryResult + settle()/safeQuery(): backend failures become fallbacks, never errors
   lib/api/schema.d.ts       Generated OpenAPI types (committed; do not edit)
   lib/api/types.ts          Type helpers over the schema (Schema<"ProductCardOut">)
-  lib/auth/session.ts       Server-only session cookie helpers
+  lib/auth/                 Session (server-only): session.ts cookies, refresh.ts single-flight refresh, user.ts getSession/requireUser,
+                            action-session.ts (actions), jwt.ts exp decoding, next-param.ts safeNext, paths.ts
+  lib/http/client-context.ts  Visitor IP / user agent / request id forwarded to the backend
   lib/env.ts                Server env (zod, fail fast); lib/env.public.ts for NEXT_PUBLIC_*
   lib/errors.ts             ApiError, backend error codes, Arabic fallbacks
   lib/image-urls.ts         Backend image URLs and srcset (thumb / medium / large), server and client
   lib/images.ts             next/image loader, kept for completeness (the site renders BackendImage)
   lib/format.ts             formatPrice, formatDate, pluralize
   lib/utils.ts              cn()
-  proxy.ts                  Next.js 16 Proxy (formerly middleware) for /account and /checkout
+  proxy.ts                  Next.js 16 Proxy (formerly middleware): silent refresh, auth gates, catalog 404s
 tests/                      Vitest unit tests
-e2e/                        Playwright tests (home, catalog, layout at 4 widths, backend down); e2e/screenshots/ is git-ignored
+e2e/                        Playwright tests (home, catalog, layout at 4 widths, auth, backend down, dev Google, IP forwarding); e2e/screenshots/ is git-ignored
 scripts/start-standalone.mjs  Starts the standalone build with .env files and static assets (used by npm start)
 scripts/visual-compare.mjs    Screenshots the prototype and the site side by side
 scripts/bundle-report.mjs     Client JS per route from the Next.js bundle analyzer
@@ -69,15 +70,96 @@ scripts/lighthouse-runs.mjs   Runs Lighthouse N times and prints the median
 
 The browser **never talks to FastAPI and never sees a token**. This app is a backend-for-frontend:
 
-- Server components, server actions and route handlers call FastAPI through `src/lib/api/client.ts` (server-only).
-- Access and refresh tokens live in **httpOnly** cookies on the website's domain: `Secure` in production (with the `__Host-` prefix), `SameSite=Lax`, `path=/`. Helpers are in `src/lib/auth/session.ts`.
-- Access tokens last 15 minutes. Refresh tokens last 60 days and **each one works once**: refresh one at a time, rotate both cookies, and treat `TOKEN_REUSED` as a logout. The planned flow is described in `src/app/api/auth/*/route.ts`.
-- `src/proxy.ts` will only do an optimistic redirect to `/login` when no session cookie exists. The real check happens where data is read.
-- Public catalog reads use `publicApi` (no cookies, cacheable with `"use cache"`). Personal reads use `await getApi()`, which reads cookies, so that UI must render inside `<Suspense>` (Cache Components).
+- Server components, server actions and the proxy call FastAPI through `src/lib/api/client.ts` (server-only). Public catalog reads use `publicApi` (no cookies, no visitor headers, cacheable with `"use cache"`). Personal reads use `await getApi()`, which reads cookies and headers, so that UI renders inside `<Suspense>` (Cache Components).
 - Errors from the backend (`{"error": {"code", "message", "details"}}`) become a typed `ApiError`. Show `errorMessage(error)`, which prefers the backend's Arabic message, then the fallback for the code in `messages/ar.json`.
-- To do before going live: forward the visitor's IP to the backend (per-IP login rate limits), see the TODO in `client.ts`.
 
 The admin panel is a separate project; nothing admin lives here.
+
+### Cookies
+
+All are set by server code only (`src/lib/auth/session.ts`): **httpOnly**, `SameSite=Lax`, `path=/`; in production `Secure` with the `__Host-` prefix (no `Domain`, so no subdomain can set them). Locally over http the prefix and `Secure` are dropped. Production must be served over https (browsers treat only `localhost` as secure over http).
+
+| Cookie                  | Holds                                           | maxAge                         |
+| ----------------------- | ----------------------------------------------- | ------------------------------ |
+| `__Host-lamsa_at`       | access token                                    | `expires_in` (900 s)           |
+| `__Host-lamsa_rt`       | refresh token                                   | `refresh_expires_in` (60 days) |
+| `__Host-lamsa_pwc`      | `1` while `user.must_change_password` is true   | like the refresh token         |
+| `__Host-lamsa_su`       | Google `signup_token` (+ Google name and email) | 10 minutes                     |
+| `lamsa_devg` (dev only) | stable fake Google subject of the dev button    | 1 year                         |
+
+Tokens are never in localStorage, props, URLs or logs. The e2e tests assert that they never appear in the HTML, the JS/RSC payloads, storage or `document.cookie`.
+
+### Silent refresh in the proxy
+
+`src/proxy.ts` runs for page and RSC requests (not static files, images, API routes or prefetches):
+
+1. If the access cookie is missing or expires within 60 s, and a refresh cookie exists, it calls `POST /auth/refresh`. The token's `exp` is decoded **without** verification, only to decide this; the backend is the only verifier.
+2. **Single-flight per process** (`src/lib/auth/refresh.ts`): requests with the same refresh token share one call (a map keyed by the token's SHA-256). A successful result is kept for 10 s, so requests that still carry the old cookie get the same new pair instead of re-using the old token. The backend's 20 s grace covers duplicates across processes.
+3. Success: both new cookies go on the response **and** on the forwarded request (`NextResponse.next({ request: { headers } })`), so server components see the new token in the same request.
+4. `TOKEN_REUSED` / `TOKEN_INVALID` / `TOKEN_EXPIRED` (or a disabled account): the session cookies are cleared and the request continues as a guest. Backend down or slow (3 s): continue as is, never a redirect loop.
+
+Server actions are POSTs and skip that step. The two that need the access token (change password, logout from all devices) use `withAccess()` (`src/lib/auth/action-session.ts`), which refreshes through the same single-flight refresher when needed and retries once on `TOKEN_EXPIRED`.
+
+`getSession()` / `getCurrentUser()` (`src/lib/auth/user.ts`) read the access cookie and call `GET /users/me` once per request (React `cache()`); they never throw for auth problems. `requireUser(path)` is the real check on account pages.
+
+### Gates
+
+In the proxy, from the cookies (optimistic; pages re-check with `requireUser()`):
+
+- `/account/*` and `/checkout/*` without a session → `/login?next=<path>`.
+- A temporary password (`lamsa_pwc`) → every page except `/account/change-password` redirects there (with `?next=`). The page explains that the store gave a temporary password and offers only "تسجيل الخروج": until the password is changed, the backend blocks `logout-all` and everything else except `/users/me`, change password, logout and refresh.
+- `/login` and `/register` with a session the backend accepts (`GET /users/me`) → `next` or `/`. A rejected session is cleared, so a stale cookie can't bounce the visitor between `/login` and `/`.
+- `/complete-profile` without the Google signup cookie → `/login`.
+
+Every `next` goes through `safeNext()` (`src/lib/auth/next-param.ts`): only same-site paths starting with `/` (not `//` or `/\`, no backslashes or control characters, same origin once resolved); anything else becomes `/`. Server actions rely on the Origin check built into Next.js; there are no state-changing route handlers.
+
+Backend behaviour to know: logout-all and an admin password reset end the refresh tokens at once, but an access token already issued stays valid until it expires (at most 15 minutes).
+
+### Flows and forms
+
+Login, register, Google completion and change password are react-hook-form + zod forms (`src/features/auth`). The same schemas (`schemas.ts`, `zod/mini`, loaded only on the auth pages) are re-validated in the server actions (`actions.ts`). The phone field is the prototype `.ph-row`: the country code (`phoneCountryCodes` in `src/config/site.ts`) plus the number without its trunk `0`; the backend normalizes it. New passwords show the backend rules live (8–128 characters, not only digits, not the phone).
+
+Backend errors → fields (`errors.ts`, unit-tested):
+
+- `PHONE_TAKEN`, `INVALID_PHONE` → the phone field.
+- `WEAK_PASSWORD`, `SAME_PASSWORD` → the password field.
+- `INVALID_CREDENTIALS` → form error (the same text for a wrong password and an unknown phone).
+- `ALREADY_REGISTERED` → form error with a login link.
+- `TOO_MANY_ATTEMPTS` → a live countdown from `Retry-After`; submit stays disabled until it ends.
+- `ACCOUNT_DISABLED` → form error with the store's phone.
+- `SERVICE_BUSY` → the action waits `Retry-After` (at most 5 s) and retries once, then shows the message.
+- `VALIDATION_ERROR` → its `details` on the fields.
+
+The backend's Arabic message always wins. Buttons are disabled while pending and until hydrated, and the forms use `method="post"`, so a password never lands in a URL. The first invalid field gets the focus; errors use `aria-invalid` and `aria-describedby`.
+
+"نسيت كلمة السر؟" opens a dialog: there is no self-service reset, so the store gives a temporary password by phone (`NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_SUPPORT_WHATSAPP`).
+
+### Google sign-in
+
+- With `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: the official Google Identity Services button, loaded only on `/login` and `/register` (`afterInteractive`), in Google's own styling (outline, "continue with", Arabic). The ID token goes to a server action → `POST /auth/google`. Registered: session and redirect. Not registered: the `signup_token` goes into its own 10-minute httpOnly cookie, and the visitor continues at `/complete-profile` (name prefilled from Google, plus the phone).
+- Without it: in development a "دخول تجريبي بـ Google" button (prototype `.btn.google`) sends `dev-google|<sub>|<email>|<name>`, which needs the backend's `GOOGLE_DEV_MODE=true`. The sub is random once and kept in `lamsa_devg`, so repeated clicks are the same user. In production Google is hidden.
+- **Google Cloud setup:** APIs & Services → Credentials → Create credentials → OAuth client ID → **Web application**. Authorized JavaScript origins: `http://localhost:3000` and `http://localhost` (development) and the production origin `https://<domain>`. No redirect URIs are needed (popup mode). Put the client id in `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (then rebuild) **and** add the same id to the backend's `GOOGLE_CLIENT_IDS`.
+- CSP (still a TODO in `next.config.ts`): allow `https://accounts.google.com/gsi/client` (script), `https://accounts.google.com/gsi/` (frame, connect) and `https://accounts.google.com/gsi/style` (style).
+
+### Session-dependent UI
+
+The shell stays static. Two small `<Suspense>` holes depend on the session, each with the guest version at the same size as its fallback: the desktop header's account entry ("تسجيل الدخول" → `/login`, or the first name → `/account`) and the tabbar's "حسابي" link (`/login` or `/account`). The account label has a fixed width (the guest label's; longer names end in "…"), so nothing moves (CLS 0).
+
+### Client IP forwarding
+
+Every server-side call to the backend sends `X-Forwarded-For` (the visitor's IP), `User-Agent` and `X-Request-ID` (`src/lib/http/client-context.ts`; the proxy stamps the id on each request). The backend's per-IP login limits and session list then see visitors, not this server. `publicApi` never sends them (its cached responses are shared).
+
+- `WEB_TRUST_PROXY_HEADERS=false` (default, development): the IP is always `127.0.0.1`, and whatever the browser sends is ignored (e2e-tested with a capture server).
+- `WEB_TRUST_PROXY_HEADERS=true` (production, behind our Nginx only): `X-Real-IP`, else the rightmost `X-Forwarded-For` entry, both set by Nginx from the socket address (`proxy_set_header X-Real-IP $remote_addr;`). Never enable it when browsers can reach Next.js directly.
+
+**Production settings:**
+
+| Project       | Setting                                                                                                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| lamsa-web     | `WEB_TRUST_PROXY_HEADERS=true`. Its Nginx sets `X-Real-IP $remote_addr` and overwrites `X-Forwarded-For`; Next.js listens only to that Nginx.                                                                                 |
+| lamsa-backend | `TRUSTED_PROXY_IPS=<API Nginx IP>,<website server IP>` (only those) and Uvicorn with `--no-proxy-headers`. In the API's Nginx, `set_real_ip_from` lists only the website server (backend README, "Client IP behind proxies"). |
+
+The mobile apps call the API directly or through Nginx. They are never in `TRUSTED_PROXY_IPS` or `set_real_ip_from`, so any `X-Forwarded-For` they send is ignored.
 
 ## Running backend + web together
 
@@ -85,10 +167,12 @@ The admin panel is a separate project; nothing admin lives here.
 
    ```powershell
    cd ..\lamsa-backend
-   .\venv\Scripts\fastapi.exe dev app/main.py        # http://127.0.0.1:8000/docs
+   .\venv\Scripts\fastapi.exe dev app/main.py --no-proxy-headers   # http://127.0.0.1:8000/docs
    ```
 
    Optional demo data: `.\venv\Scripts\python.exe -m scripts.seed_demo_catalog`.
+
+   Backend `.env` for local work with the website: `TRUSTED_PROXY_IPS=127.0.0.1,::1` (so it accepts the visitor IP this server forwards) and, for the dev Google button, `GOOGLE_DEV_MODE=true` (development only).
 
 2. Web:
 
@@ -104,28 +188,32 @@ The admin panel is a separate project; nothing admin lives here.
 
 `.env.local` is git-ignored; `.env.example` is the template. Files must be UTF-8 **without BOM**: don't write them with PowerShell 5.1 `Set-Content` or `Out-File`. Missing or invalid values stop the app at startup with a clear message.
 
-| Variable                     | Scope       | Example                        |
-| ---------------------------- | ----------- | ------------------------------ |
-| `API_BASE_URL`               | server only | `http://127.0.0.1:8000/api/v1` |
-| `NEXT_PUBLIC_SITE_URL`       | public      | `http://localhost:3000`        |
-| `NEXT_PUBLIC_MEDIA_BASE_URL` | public      | `http://127.0.0.1:8000/media`  |
+| Variable                       | Scope       | Example                                                            |
+| ------------------------------ | ----------- | ------------------------------------------------------------------ |
+| `API_BASE_URL`                 | server only | `http://127.0.0.1:8000/api/v1`                                     |
+| `NEXT_PUBLIC_SITE_URL`         | public      | `http://localhost:3000`                                            |
+| `NEXT_PUBLIC_MEDIA_BASE_URL`   | public      | `http://127.0.0.1:8000/media`                                      |
+| `WEB_TRUST_PROXY_HEADERS`      | server only | `false` (`true` only behind our Nginx, see _Client IP forwarding_) |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | public      | empty: the dev button in development, no Google in production      |
+| `NEXT_PUBLIC_SUPPORT_PHONE`    | public      | `+49 30 1234567` (optional, "forgot password")                     |
+| `NEXT_PUBLIC_SUPPORT_WHATSAPP` | public      | `4915112345678` (optional)                                         |
 
 `NEXT_PUBLIC_*` values are inlined at **build** time; rebuild after changing them.
 
 ## Scripts
 
-| Script                            |                                                                                                                                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`                     | Dev server (Turbopack)                                                                                                                                                                                        |
-| `npm run build`                   | Production build (`.next/standalone`)                                                                                                                                                                         |
-| `npm run start`                   | Start the standalone build (`scripts/start-standalone.mjs`: loads `.env*` files like `next start`, copies static assets; `-- --port 3100`)                                                                    |
-| `npm run lint`                    | ESLint                                                                                                                                                                                                        |
-| `npm run typecheck`               | `next typegen` (route types) + `tsc --noEmit`                                                                                                                                                                 |
-| `npm run format` / `format:check` | Prettier write / check                                                                                                                                                                                        |
-| `npm run test`                    | Vitest unit tests                                                                                                                                                                                             |
-| `npm run test:e2e`                | Playwright: project `chromium` against the production build (run `npm run build` first), project `backend-down` against `next dev` with an unreachable backend. First time: `npx playwright install chromium` |
-| `npm run gen:api`                 | Regenerate the API types from the running backend                                                                                                                                                             |
-| `npm run audit`                   | `npm audit --omit=dev --audit-level=high` (fails on high/critical runtime issues)                                                                                                                             |
+| Script                            |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                     | Dev server (Turbopack)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `npm run build`                   | Production build (`.next/standalone`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `npm run start`                   | Start the standalone build (`scripts/start-standalone.mjs`: loads `.env*` files like `next start`, copies static assets; `-- --port 3100`)                                                                                                                                                                                                                                                                                                                                                                              |
+| `npm run lint`                    | ESLint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `npm run typecheck`               | `next typegen` (route types) + `tsc --noEmit`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `npm run format` / `format:check` | Prettier write / check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `npm run test`                    | Vitest unit tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `npm run test:e2e`                | Playwright (run `npm run build` first; the backend must run with `TRUSTED_PROXY_IPS=127.0.0.1,::1` and `GOOGLE_DEV_MODE=true`): `chromium` against the production build, `backend-down` against `next dev` with an unreachable backend, `auth-dev` + `ip-forwarding` against one `next dev` behind a recording proxy (dev Google button, forwarded headers). Test accounts are named `e2e-…` and deleted by each test; the global setup creates and deletes a test admin. First time: `npx playwright install chromium` |
+| `npm run gen:api`                 | Regenerate the API types from the running backend                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `npm run audit`                   | `npm audit --omit=dev --audit-level=high` (fails on high/critical runtime issues)                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 Before every commit: `npm run lint && npm run typecheck && npm run test && npm run build && npm run audit`.
 
@@ -173,7 +261,7 @@ node scripts/visual-compare.mjs --base http://localhost:3300
 
 This screenshots a prototype feature (`--feature`: 1 home, 2 care list → `/c/care`, 3 velvet lipstick → `/p/demo-velvet-lipstick`, 4 brands → `/brands`; its frames expanded to full height) and the site at the same widths (1158 and 346px) and at 1280×800 and 390×844, in light and dark mode, into `e2e/screenshots/feature-<n>/`. Compare the pairs and fix differences. `npm run test:e2e` also checks 360, 768, 1024 and 1440px: no horizontal scroll, tabbar only below 768px, desktop nav from 768px, nothing hidden behind the tabbar.
 
-**Known, intentional differences:** real product photos instead of the prototype drawings (the demo images carry their own light backgrounds, also in dark mode); brand logos inside the round mark, with the monogram only as a fallback; rail order follows the backend (newest first); category tiles show every top-level category with products, and the desktop columns avoid an orphan tile (1–4 tiles in one row, 5–8 in two balanced rows); no count badges, favorite state or user name until auth exists; the subtitle of the "new" fallback banner is static.
+**Known, intentional differences:** real product photos instead of the prototype drawings (the demo images carry their own light backgrounds, also in dark mode); brand logos inside the round mark, with the monogram only as a fallback; rail order follows the backend (newest first); category tiles show every top-level category with products, and the desktop columns avoid an orphan tile (1–4 tiles in one row, 5–8 in two balanced rows); no count badges or favorite state yet; the subtitle of the "new" fallback banner is static. Auth (prototype feature 7, `--feature 7 --path /login`): the prototype logs in with an SMS code, the site with a password, so the password field (with a show/hide toggle and the rule hints), the register / forgot-password links and the forgot-password dialog are additions in the prototype's `.fld` / `.inp` / `.link` styles; the real Google button uses Google's own styling; the header's account label has a fixed width (no layout shift); the profile card has a second button (logout from all devices).
 
 ## Data, empty and error states
 

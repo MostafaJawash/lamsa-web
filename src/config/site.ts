@@ -44,6 +44,29 @@ export const accountNav = [
   { labelKey: "pages.settings", href: route("/account/settings") },
 ] as const satisfies readonly NavItem[];
 
+/**
+ * Country codes of the phone field (prototype `.ph-row` select), in the prototype
+ * order; the first is the default. The backend normalizes the combined number.
+ */
+export const phoneCountryCodes = [
+  "+49",
+  "+33",
+  "+961",
+  "+963",
+  "+962",
+] as const;
+export type PhoneCountryCode = (typeof phoneCountryCodes)[number];
+export const defaultCountryCode: PhoneCountryCode = phoneCountryCodes[0];
+
+/**
+ * Store contact for "forgot password" (there is no self-service reset: the store gives
+ * a temporary password by phone). Empty values hide the matching link.
+ */
+export const support = {
+  phone: publicEnv.NEXT_PUBLIC_SUPPORT_PHONE,
+  whatsapp: publicEnv.NEXT_PUBLIC_SUPPORT_WHATSAPP,
+} as const;
+
 export type TabKey = "home" | "categories" | "favorites" | "cart" | "account";
 
 /** Mobile tabbar (prototype `tabs`). */
@@ -94,6 +117,7 @@ function titleFor(pathname: string): MessageKey | null {
     "/account/orders": "pages.orders",
     "/account/notifications": "pages.notifications",
     "/account/settings": "pages.settings",
+    "/account/change-password": "pages.changePassword",
     "/checkout": "pages.checkout",
   };
   if (pathname === "/") return null;
@@ -151,4 +175,7 @@ export const siteConfig = {
   mainNav,
   accountNav,
   tabs,
+  phoneCountryCodes,
+  defaultCountryCode,
+  support,
 } as const;

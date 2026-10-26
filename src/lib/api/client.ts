@@ -1,10 +1,14 @@
 import "server-only";
 
-import createClient, { type Client, type Middleware } from "openapi-fetch";
+import createClient, { type Client } from "openapi-fetch";
 
 import { getAccessToken } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 import { ApiError, isApiErrorBody } from "@/lib/errors";
+import {
+  getClientContext,
+  type ClientContext,
+} from "@/lib/http/client-context";
 
 import type { paths as GeneratedPaths } from "./schema";
 
@@ -52,43 +56,60 @@ async function fetchWithTimeout(request: Request): Promise<Response> {
   }
 }
 
-function bearer(accessToken: string): Middleware {
+/**
+ * The visitor's IP, user agent and request id, so the backend's per-IP login limits and
+ * session list see the visitor, not this server (it lists this server in
+ * TRUSTED_PROXY_IPS). See src/lib/http/client-context.ts.
+ */
+export function visitorHeaders(context: ClientContext): Record<string, string> {
   return {
-    onRequest({ request }) {
-      request.headers.set("Authorization", `Bearer ${accessToken}`);
-      return request;
-    },
+    "X-Forwarded-For": context.ip,
+    ...(context.requestId ? { "X-Request-ID": context.requestId } : {}),
+    ...(context.userAgent ? { "User-Agent": context.userAgent } : {}),
   };
 }
 
-// TODO(auth): forward the visitor's IP (X-Forwarded-For) so the backend's per-IP login
-// rate limits see real clients, not this server; the backend must then run with
-// TRUST_PROXY_HEADERS=true behind a proxy that only this server can reach.
-
+/**
+ * Static default headers, not openapi-fetch middleware: middleware makes openapi-fetch
+ * draw a random id per request, which Next.js rejects in (runtime) prerenders.
+ */
 export function createApiClient(
-  options: { accessToken?: string | null } = {},
+  options: { accessToken?: string | null; client?: ClientContext } = {},
 ): ApiClient {
-  const client = createClient<ApiPaths>({
+  return createClient<ApiPaths>({
     baseUrl: env.API_BASE_URL,
     fetch: fetchWithTimeout,
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      ...(options.client ? visitorHeaders(options.client) : {}),
+      ...(options.accessToken
+        ? { Authorization: `Bearer ${options.accessToken}` }
+        : {}),
+    },
   });
-  if (options.accessToken) client.use(bearer(options.accessToken));
-  return client;
 }
 
 /**
- * Anonymous client for public catalog data. Reads no cookies, so it can be used
- * inside `"use cache"` functions.
+ * Anonymous client for public catalog data. Reads no cookies or headers, so it can be
+ * used inside `"use cache"` functions (responses are shared between visitors, so no
+ * visitor headers either).
  */
 export const publicApi: ApiClient = createApiClient();
 
 /**
- * Client that sends the visitor's access token when there is one. Reads cookies, so
- * the calling component must render inside a `<Suspense>` boundary (Cache Components).
+ * Client for the current visitor: forwards their IP / user agent / request id and sends
+ * their access token when there is one (or `accessToken` when given, e.g. a token just
+ * refreshed in a server action). Reads cookies and headers, so the calling component
+ * must render inside a `<Suspense>` boundary (Cache Components).
  */
-export async function getApi(): Promise<ApiClient> {
-  return createApiClient({ accessToken: await getAccessToken() });
+export async function getApi(
+  options: { accessToken?: string | null } = {},
+): Promise<ApiClient> {
+  const accessToken =
+    options.accessToken === undefined
+      ? await getAccessToken()
+      : options.accessToken;
+  return createApiClient({ accessToken, client: await getClientContext() });
 }
 
 type FetchResult<T> = { data?: T; error?: unknown; response: Response };

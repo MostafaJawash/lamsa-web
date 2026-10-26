@@ -324,9 +324,12 @@ test.describe("not found", () => {
     request,
   }) => {
     // Without the proxy's rewrite, Next.js answers an RSC request without its cache-busting
-    // parameter with a 307 to the same path; a rewritten one would be a 404.
+    // parameter with a 307 to the same path; a rewritten one would be a 404. Next.js hides
+    // the RSC headers from the proxy, so it tells client navigations from documents by
+    // Sec-Fetch-Dest, which browsers send as "empty" on those fetches. Prefetches never
+    // reach the proxy (matcher).
     for (const headers of <Record<string, string>[]>[
-      { RSC: "1" },
+      { RSC: "1", "Sec-Fetch-Dest": "empty" },
       { RSC: "1", "Next-Router-Prefetch": "1" },
     ]) {
       const response = await request.get("/p/nope", {

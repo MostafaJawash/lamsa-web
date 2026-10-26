@@ -116,8 +116,9 @@ test.describe("mobile chrome", () => {
     );
     await expect(page.locator(".lm-mtitle")).toHaveText("الأقسام");
 
+    // Guest: حسابي leads to the login page.
     await tabbar.getByRole("link", { name: "حسابي" }).click();
-    await expect(page).toHaveURL(/\/account$/);
+    await expect(page).toHaveURL(/\/login(\?next=%2Faccount)?$/);
     await expect(tabbar.getByRole("link", { name: "حسابي" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -139,6 +140,11 @@ test.describe("mobile chrome", () => {
     page,
   }) => {
     await page.goto("/new");
+    // Hydrated, and the session-dependent tabbar (it counts the visits) streamed in.
+    await page.waitForLoadState("networkidle");
+    await expect(
+      page.locator(".lm-tabbar a[href='/login']:visible"),
+    ).toHaveCount(1);
     await page.getByRole("button", { name: "رجوع" }).click();
     await expect(page).toHaveURL(/\/$/);
 

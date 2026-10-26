@@ -3890,6 +3890,11 @@ export interface components {
              * @description Access token lifetime in seconds
              */
             expires_in: number;
+            /**
+             * Refresh Expires In
+             * @description Refresh token lifetime in seconds
+             */
+            refresh_expires_in: number;
             user: components["schemas"]["UserOut"];
         };
         /** TopProduct */
