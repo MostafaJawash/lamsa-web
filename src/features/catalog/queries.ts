@@ -138,7 +138,7 @@ async function loadBrands(): Promise<Loaded<Brand[]>> {
 
 const noItems = (items: readonly unknown[]): boolean => items.length === 0;
 
-/** Newest products flagged "new" (home rail "وصل حديثاً"). */
+/** Newest products flagged "new" (home rail "وصل حديثًا"). */
 export function getNewArrivals(): Promise<QueryResult<ProductCard[]>> {
   return safeQuery("new-arrivals", loadNewArrivals, noItems);
 }
@@ -389,7 +389,7 @@ async function loadRelated(slug: string): Promise<Loaded<ProductCard[]>> {
   });
 }
 
-/** "ممكن يعجبك كمان": in-stock products of the same category. */
+/** Related products: in-stock products of the same category. */
 export function getRelated(slug: string): Promise<QueryResult<ProductCard[]>> {
   return safeQuery("related", () => loadRelated(slug), noItems);
 }

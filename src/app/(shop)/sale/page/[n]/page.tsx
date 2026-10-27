@@ -22,7 +22,7 @@ export async function generateMetadata({
   return page ? flagListMetadata("sale", page) : {};
 }
 
-/** `/sale/page/[n]`: page 2+ of "تنزيلات" (page 1 is `/sale`). */
+/** `/sale/page/[n]`: page 2+ of "التخفيضات" (page 1 is `/sale`). */
 export default async function SalePageN({
   params,
   searchParams,

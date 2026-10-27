@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/test-e2e.mjs",
     "gen:api": "openapi-typescript http://127.0.0.1:8000/openapi.json -o src/lib/api/schema.d.ts",
     "audit": "npm audit --omit=dev --audit-level=high"
   },

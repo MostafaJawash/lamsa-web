@@ -30,9 +30,11 @@ for (const width of WIDTHS) {
         }));
         expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
 
-        const tabbar = page.locator(".lm-tabbar");
+        // PPR may briefly retain a hidden previous shell while the stream settles.
+        const tabbars = page.locator(".lm-tabbar");
         const desktopNav = page.locator(".lm-dnav");
         if (width < 768) {
+          const tabbar = page.locator(".lm-tabbar:visible").last();
           await expect(tabbar).toBeVisible();
           await expect(desktopNav).toBeHidden();
           await expect(page.locator(".lm-mhead")).toBeVisible();
@@ -52,7 +54,7 @@ for (const width of WIDTHS) {
           const tabbarTop = (await tabbar.boundingBox())?.y ?? 0;
           expect(contentBottom).toBeLessThanOrEqual(tabbarTop + 0.5);
         } else {
-          await expect(tabbar).toBeHidden();
+          await expect(tabbars.first()).toBeHidden();
           await expect(desktopNav).toBeVisible();
           await expect(page.locator(".lm-mhead")).toBeHidden();
           await expect(page.locator(".lm-dfoot")).toBeVisible();

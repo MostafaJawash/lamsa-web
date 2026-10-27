@@ -51,7 +51,7 @@ test("Google dev: a new user completes the profile, then comes back", async ({
 
   await page.goto("/account");
   await expect(page.locator(".lm-profile .meta").last()).toHaveText(
-    "دخلت عن طريق Google",
+    "سجّلت الدخول عبر Google",
   );
   await page
     .locator(".lm-profile button", { hasText: /^تسجيل الخروج$/ })

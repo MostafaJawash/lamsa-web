@@ -10,7 +10,7 @@ import { safeNext } from "@/lib/auth/next-param";
 
 export const metadata: Metadata = { title: t("pages.login") };
 
-/** Prototype `.note` when the visitor came from checkout ("سجّل دخولك لتكمّل طلبك"). */
+/** Prototype `.note` shown when the visitor came from checkout. */
 async function CheckoutNote({
   searchParams,
 }: {

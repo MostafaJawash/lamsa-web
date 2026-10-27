@@ -52,7 +52,7 @@ export function linkTarget(link: Link): LinkTarget {
   }
 }
 
-/** CTA pill text, as in the prototype: sale → "تسوّق العروض", new → "شوف الجديد", else "اكتشف". */
+/** CTA pill text, as in the prototype: sale → "تسوّق العروض", new → "تصفّح الجديد", else "اكتشف". */
 export function ctaKey(link: Link): MessageKey {
   if (link.type === "sale") return "home.banners.ctaSale";
   if (link.type === "new") return "home.banners.ctaNew";

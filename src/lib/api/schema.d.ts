@@ -3967,7 +3967,7 @@ export interface components {
             title: string;
             /**
              * Body
-             * @default إذا وصلك هالإشعار، الإعدادات تمام ✅
+             * @default إذا وصلك هذا الإشعار، فالإعدادات تعمل جيدًا ✅
              */
             body: string;
         };

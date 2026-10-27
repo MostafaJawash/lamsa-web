@@ -43,17 +43,23 @@ describe("formatDate", () => {
 
 describe("pluralize", () => {
   it("uses every Arabic plural form", () => {
-    expect(pluralize(0, "products")).toBe("لا يوجد منتجات");
+    expect(pluralize(0, "products")).toBe("لا توجد منتجات");
     expect(pluralize(1, "products")).toBe("منتج واحد");
-    expect(pluralize(2, "products")).toBe("منتجين");
+    expect(pluralize(2, "products")).toBe("منتجان");
     expect(pluralize(3, "products")).toBe("3 منتجات");
     expect(pluralize(10, "products")).toBe("10 منتجات");
-    expect(pluralize(11, "products")).toBe("11 منتجاً");
-    expect(pluralize(99, "products")).toBe("99 منتجاً");
+    expect(pluralize(11, "products")).toBe("11 منتجًا");
+    expect(pluralize(99, "products")).toBe("99 منتجًا");
     expect(pluralize(100, "products")).toBe("100 منتج");
   });
 
   it("works for other nouns", () => {
+    expect(pluralize(0, "items")).toBe("لا توجد قطع");
+    expect(pluralize(2, "items")).toBe("قطعتان");
     expect(pluralize(3, "items")).toBe("3 قطع");
+    expect(pluralize(11, "items")).toBe("11 قطعة");
+    expect(pluralize(0, "brands")).toBe("لا توجد ماركات");
+    expect(pluralize(2, "brands")).toBe("ماركتان");
+    expect(pluralize(11, "brands")).toBe("11 ماركة");
   });
 });

@@ -25,7 +25,7 @@ test.describe("home with data", () => {
 
     await expect(page.locator(".lm-banner").first()).toBeVisible();
 
-    const newRail = page.getByRole("region", { name: "وصل حديثاً" });
+    const newRail = page.getByRole("region", { name: "وصل حديثًا" });
     await expect(newRail.locator(".lm-card").first()).toBeVisible();
     await expect(
       newRail.getByRole("link", { name: "عرض الكل" }),
@@ -45,7 +45,7 @@ test.describe("home with data", () => {
     expect(await tiles.count()).toBeGreaterThan(0);
     await expect(tiles.first()).toHaveAttribute("href", /^\/c\//);
 
-    const brands = page.getByRole("region", { name: "ماركاتنا" });
+    const brands = page.getByRole("region", { name: "الماركات" });
     await expect(brands.locator(".lm-brand-chip").first()).toHaveAttribute(
       "href",
       /^\/brands\//,
@@ -57,7 +57,7 @@ test.describe("home with data", () => {
   }) => {
     await page.goto("/");
     const card = page
-      .getByRole("region", { name: "وصل حديثاً" })
+      .getByRole("region", { name: "وصل حديثًا" })
       .locator(".lm-card")
       .first();
     await expect(card.locator(".lm-card-link")).toHaveAttribute(
@@ -150,7 +150,7 @@ test.describe("mobile chrome", () => {
     await page.goto("/");
     await page
       .locator(".lm-chips")
-      .getByRole("link", { name: "تنزيلات" })
+      .getByRole("link", { name: "التخفيضات" })
       .click();
     await expect(page).toHaveURL(/\/sale$/);
     await page.getByRole("button", { name: "رجوع" }).click();

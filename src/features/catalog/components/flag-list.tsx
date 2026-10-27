@@ -29,7 +29,7 @@ const TEXT = {
   },
 } as const;
 
-/** Metadata of page `page` of "جديد" or "تنزيلات" (static: no search params). */
+/** Metadata of page `page` of "جديد" or "التخفيضات" (static: no search params). */
 export function flagListMetadata(kind: Flag, page: number): Metadata {
   return listMetadata({
     title: TEXT[kind].title(),
@@ -40,7 +40,7 @@ export function flagListMetadata(kind: Flag, page: number): Metadata {
 }
 
 /**
- * "جديد" and "تنزيلات" (prototype `pList()` for new arrivals and the sale):
+ * "جديد" and "التخفيضات" (prototype `pList()` for new arrivals and the sale):
  * `/new`, `/sale` and their `/page/[n]` pages.
  */
 export async function FlagList({

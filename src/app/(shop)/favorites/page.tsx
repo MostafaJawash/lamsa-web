@@ -121,7 +121,7 @@ async function FavoritesContent({
 }
 
 /**
- * Favorites (prototype `pFavs()`): product cards with "انقل للسلة" and remove under
+ * Favorites (prototype `pFavs()`): product cards with "انقل إلى السلة" and remove under
  * each. Logged in: GET /favorites, 24 per page; guests: every favorite in the cookie
  * (GET /products?ids=). Out-of-stock favorites stay listed.
  */

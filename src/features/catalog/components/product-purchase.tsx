@@ -303,7 +303,11 @@ export function ProductPurchase({
                       >
                         <span dir="ltr">{v.value}</span>
                         {target ? (
-                          <small>
+                          <small
+                            data-unavailable-suffix={
+                              na ? ` ${t("product.outShort")}` : undefined
+                            }
+                          >
                             <span className="lm-num" dir="ltr">
                               {formatPrice(target.current_price)}
                             </span>

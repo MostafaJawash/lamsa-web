@@ -1602,7 +1602,7 @@
     opacity: 0.5;
   }
   .lm-size.na small::after {
-    content: " (نفد)";
+    content: attr(data-unavailable-suffix);
   }
   .lm-avail {
     font-size: 14px;

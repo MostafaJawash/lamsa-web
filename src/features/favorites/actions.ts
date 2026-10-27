@@ -171,7 +171,7 @@ async function firstVariantInStock(slug: string): Promise<number | null> {
 }
 
 /**
- * "انقل للسلة" on the favorites page: logged in, POST /favorites/{id}/move-to-cart;
+ * "انقل إلى السلة" on the favorites page: logged in, POST /favorites/{id}/move-to-cart;
  * guests: add to the guest cart (variable products: the first variant in stock), then
  * leave the guest favorites.
  */
@@ -240,7 +240,7 @@ export async function toggleFavoriteForm(form: FormData): Promise<void> {
   await toggleFavorite(form);
 }
 
-/** "انقل للسلة" as a plain form (without JavaScript: moves, then redirects back). */
+/** "انقل إلى السلة" as a plain form (without JavaScript: moves, then redirects back). */
 export async function moveToCartForm(form: FormData): Promise<void> {
   form.delete("js");
   await moveToCart(form);

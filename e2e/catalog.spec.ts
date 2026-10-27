@@ -63,14 +63,14 @@ test.describe("list filters (desktop)", () => {
       sheet.locator("label.lm-toggle", { hasText: "المتوفر فقط" }),
     ).toHaveCount(0);
     await sheet.locator("label.lm-toggle", { hasText: "عليه خصم" }).click();
-    await sheet.getByRole("button", { name: "اعرض النتائج" }).click();
+    await sheet.getByRole("button", { name: "عرض النتائج" }).click();
     await expect(page).toHaveURL(/on_sale=true/);
     await expect(
       page.getByRole("link", { name: /المزيد من الفلاتر/ }),
     ).toContainText("2");
 
     // Removable chip.
-    await page.getByRole("link", { name: "شيل الفلتر: عليه خصم" }).click();
+    await page.getByRole("link", { name: "إزالة الفلتر: عليه خصم" }).click();
     await expect(page).not.toHaveURL(/on_sale/);
 
     // Clear all (inside the sheet).
@@ -90,11 +90,12 @@ test.describe("list filters (desktop)", () => {
     await page.getByRole("link", { name: /المزيد من الفلاتر/ }).click();
     const sheet = page.getByRole("dialog");
     await expect(sheet).toHaveAttribute("data-side", "end");
-    const box = await sheet.boundingBox();
     // RTL: the end side is the left edge (a 2px border/shadow may sit outside).
-    expect(Math.abs(box?.x ?? 99)).toBeLessThanOrEqual(2);
+    await expect
+      .poll(async () => Math.abs((await sheet.boundingBox())?.x ?? 99))
+      .toBeLessThanOrEqual(2);
     await expect(
-      sheet.getByRole("button", { name: "اعرض النتائج" }),
+      sheet.getByRole("button", { name: "عرض النتائج" }),
     ).toBeInViewport();
   });
 
@@ -106,7 +107,7 @@ test.describe("list filters (desktop)", () => {
     ).toBeVisible();
     await expect(results(page).first()).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "شيل الفلتر: وَرد" }),
+      page.getByRole("link", { name: "إزالة الفلتر: وَرد" }),
     ).toBeVisible();
   });
 
@@ -114,8 +115,10 @@ test.describe("list filters (desktop)", () => {
     page,
   }) => {
     await page.goto("/c/care?min_price=500");
-    await expect(page.getByText("ما في منتجات بهالفلاتر")).toBeVisible();
-    await page.getByRole("link", { name: "امسح الفلاتر" }).click();
+    await expect(
+      page.getByText("لا توجد منتجات تطابق هذه الفلاتر"),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "مسح الفلاتر" }).click();
     await expect(page).toHaveURL(/\/c\/care$/);
   });
 
@@ -163,7 +166,7 @@ test.describe("list filters (desktop)", () => {
     const panel = page.locator("#lm-filters");
     await expect(panel).toBeVisible();
     await panel.locator("label.lm-chip", { hasText: "جافة" }).click();
-    await panel.getByRole("button", { name: "اعرض النتائج" }).click();
+    await panel.getByRole("button", { name: "عرض النتائج" }).click();
     await expect(page).toHaveURL(new RegExp(`attr\\.skin_type=${DRY}`));
     await expect(visibleCards.first()).toBeVisible();
 
@@ -199,11 +202,11 @@ test.describe("product page", () => {
 
     await page.getByRole("radio", { name: "أحمر كلاسيكي" }).click();
     await expect(page).toHaveURL(/\?v=\d+/);
-    await expect(page.locator(".lm-avail")).toHaveText("متوفر، باقي 3 قطع بس");
+    await expect(page.locator(".lm-avail")).toHaveText("لم يتبقَّ سوى 3");
     await expect(main).not.toHaveAttribute("src", before ?? "");
 
     // Quantity bounded by the stock left (3).
-    const more = page.getByRole("button", { name: "أكتر" });
+    const more = page.getByRole("button", { name: "المزيد" });
     await more.click();
     await more.click();
     await expect(page.locator(".lm-qty span")).toHaveText("3");
@@ -232,7 +235,7 @@ test.describe("product page", () => {
     const deep = await (
       await request.get(`/p/demo-velvet-lipstick?v=${id}`)
     ).text();
-    expect(deep).toContain("متوفر، باقي 3 قطع بس");
+    expect(deep).toContain("لم يتبقَّ سوى 3");
   });
 
   test("size variants show their price", async ({ page }) => {
@@ -245,7 +248,7 @@ test.describe("product page", () => {
     page,
   }) => {
     await page.goto("/p/demo-velvet-lipstick");
-    const rail = page.getByRole("region", { name: "ممكن يعجبك كمان" });
+    const rail = page.getByRole("region", { name: "قد يعجبك أيضًا" });
     await expect(rail.locator(".lm-card").first()).toBeVisible();
   });
 
@@ -266,19 +269,19 @@ test.describe("product page", () => {
     page,
   }) => {
     await page.goto("/p/demo-care-box");
-    const bundle = page.getByRole("region", { name: "شو في جوا البوكس" });
+    const bundle = page.getByRole("region", { name: "محتويات علبة الهدايا" });
     await expect(bundle.locator("a.lm-mini")).toHaveCount(3);
     // The bundle's category has no other products, so no related rail here.
     await expect(
-      page.getByRole("region", { name: "ممكن يعجبك كمان" }),
+      page.getByRole("region", { name: "قد يعجبك أيضًا" }),
     ).toHaveCount(0);
     const ld = await page
       .locator('script[type="application/ld+json"]')
       .allTextContents();
     expect(ld.some((s) => s.includes('"@type":"Product"'))).toBe(true);
     expect(ld.some((s) => s.includes('"@type":"BreadcrumbList"'))).toBe(true);
-    await page.getByRole("button", { name: "أضف إلى السلة" }).click();
-    await expect(page.locator(".lm-toast")).toContainText("انضاف للسلة");
+    await page.getByRole("button", { name: "أضِف إلى السلة" }).click();
+    await expect(page.locator(".lm-toast")).toContainText("أُضيف إلى السلة");
   });
 
   test("the product's category tab is active on desktop", async ({ page }) => {
@@ -437,7 +440,7 @@ test.describe("every page renders exactly one mobile header", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toHaveAttribute("data-side", "bottom");
     await expect(
-      sheet.getByRole("button", { name: "اعرض النتائج" }),
+      sheet.getByRole("button", { name: "عرض النتائج" }),
     ).toBeInViewport();
   });
 });

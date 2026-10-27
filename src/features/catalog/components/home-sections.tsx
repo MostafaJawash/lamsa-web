@@ -85,7 +85,7 @@ export async function CategoryTilesSection() {
   );
 }
 
-/** "ماركاتنا" (prototype `.brand-row`); hidden when there are no brands. */
+/** "الماركات" (prototype `.brand-row`); hidden when there are no brands. */
 export async function BrandsSection() {
   const result = await getBrands();
   if (result.status !== "ok") return null;

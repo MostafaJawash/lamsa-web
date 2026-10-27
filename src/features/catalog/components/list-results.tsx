@@ -45,7 +45,7 @@ export type ListResultsProps = {
   searchParams: Promise<ListSearchParams>;
   /** Page number from the path (`/page/[n]`); omitted on page 1 and on search (?page). */
   page?: number;
-  /** Empty state without filters ("رح نضيف منتجات … قريباً"). */
+  /** Empty state without filters. */
   emptyTitle: string;
 };
 

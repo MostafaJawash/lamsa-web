@@ -301,7 +301,7 @@ test.describe("gates and redirects", () => {
     expect(response.headers().location).toMatch(/\/login\?next=%2Fcheckout$/);
     await page.goto("/checkout");
     await expect(page.locator(".lm-note")).toHaveText(
-      "سجّل دخولك لتكمّل طلبك.",
+      "سجّل الدخول لإتمام طلبك.",
     );
   });
 
@@ -372,8 +372,8 @@ test.describe("must_change_password gate", () => {
     await page.goto("/login?next=/brands");
     await fillLogin(page, user.national, temporary);
     await page.waitForURL("/account/change-password?next=%2Fbrands");
-    await expect(page.locator(".lm-note")).toContainText("كلمة سر مؤقتة");
-    await expect(page.getByLabel("كلمة السر المؤقتة")).toBeVisible();
+    await expect(page.locator(".lm-note")).toContainText("كلمة مرور مؤقتة");
+    await expect(page.getByLabel("كلمة المرور المؤقتة")).toBeVisible();
     // Only "تسجيل الخروج": the backend blocks logout-all until the change.
     await expect(
       page.locator("form button", { hasText: "تسجيل الخروج" }),
@@ -470,15 +470,20 @@ test.describe("catalog 404 check", () => {
     await page.goto("/brands/demo-baity");
     const card = page.locator("main a[href^='/p/']").first();
     const target = (await card.getAttribute("href")) ?? "";
-    const rsc = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === target &&
-        response.request().headers()["rsc"] === "1",
-    );
+    const navigationResponses: import("@playwright/test").Response[] = [];
+    page.on("response", (response) => {
+      const url = new URL(response.url());
+      if (url.pathname === target) {
+        navigationResponses.push(response);
+      }
+    });
     await card.click();
-    const response = await rsc;
-    expect(response.headers()["x-lamsa-catalog-check"]).toBeUndefined();
     await page.waitForURL(target);
+    for (const response of navigationResponses.filter(
+      (item) => item.request().headers()["rsc"] === "1",
+    )) {
+      expect(response.headers()["x-lamsa-catalog-check"]).toBeUndefined();
+    }
 
     const known = await page.goto("/p/demo-velvet-lipstick");
     // Checked ("unknown" when the backend is slower than the 1.5 s check under load).

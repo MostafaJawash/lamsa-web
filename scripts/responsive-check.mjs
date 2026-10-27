@@ -7,6 +7,7 @@
 // e2e/screenshots/responsive/ (git-ignored); the JSON report to stdout.
 //
 //   node scripts/responsive-check.mjs [--base http://localhost:3000] [--only /c/care]
+//     [--widths 360,390,768,1280]
 //     [--state e2e/screenshots/state-cart.json]  (cookies, e.g. a guest cart: see
 //     visual-compare.mjs --prepare; /cart and /favorites then show their items)
 // Git Bash: prefix with MSYS_NO_PATHCONV=1.
@@ -22,6 +23,9 @@ function arg(name, fallback) {
 const base = arg("base", "http://localhost:3000");
 const only = arg("only", null);
 const state = arg("state", undefined);
+const requestedWidths = new Set(
+  arg("widths", "").split(",").map(Number).filter(Number.isFinite),
+);
 const out = "e2e/screenshots/responsive";
 mkdirSync(out, { recursive: true });
 
@@ -35,7 +39,7 @@ const VIEWPORTS = [
   [1280, 800],
   [1440, 900],
   [1920, 1080],
-];
+].filter(([width]) => requestedWidths.size === 0 || requestedWidths.has(width));
 const DARK = new Set(["390x844", "1280x800"]);
 
 const PAGES = [

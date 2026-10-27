@@ -81,7 +81,7 @@ test.describe("guest cart", () => {
     const shampoo = await product("demo-argan-shampoo");
     await addFromProductPage(page, SHAMPOO);
     await expect(page.locator(".lm-toast").first()).toContainText(
-      "انضاف للسلة",
+      "أُضيف إلى السلة",
     );
     await expect(desktopBadge(page, "السلة")).toHaveText("1");
     expect(await cookieNames(page)).toContain(GUEST_CART);
@@ -92,7 +92,7 @@ test.describe("guest cart", () => {
     const one = await previewOf([{ product_id: shampoo.id, quantity: 1 }]);
     await expect(summary(page)).toContainText(euro(one.subtotal));
 
-    const plus = lines(page).first().getByRole("button", { name: "أكتر" });
+    const plus = lines(page).first().getByRole("button", { name: "المزيد" });
     await plus.click();
     await plus.click();
     await expect(lines(page).first().locator(".lm-qty span")).toHaveText("3");
@@ -101,7 +101,7 @@ test.describe("guest cart", () => {
     await expect(desktopBadge(page, "السلة")).toHaveText("3");
 
     await lines(page).first().getByRole("button", { name: /^احذف/ }).click();
-    await expect(page.getByText("سلتك فاضية")).toBeVisible();
+    await expect(page.getByText("سلتك فارغة")).toBeVisible();
     await expect(desktopBadge(page, "السلة")).toHaveCount(0);
 
     await addFromProductPage(page, SERUM);
@@ -113,10 +113,10 @@ test.describe("guest cart", () => {
       .getByRole("dialog")
       .getByRole("button", { name: "إفراغ" })
       .click();
-    await expect(page.getByText("سلتك فاضية")).toBeVisible(); // optimistic
+    await expect(page.getByText("سلتك فارغة")).toBeVisible(); // optimistic
     await done; // the server action finished
     await page.reload();
-    await expect(page.getByText("سلتك فاضية")).toBeVisible();
+    await expect(page.getByText("سلتك فارغة")).toBeVisible();
   });
 
   test("quantity is optimistic, debounced and reconciled with the server", async ({
@@ -124,7 +124,7 @@ test.describe("guest cart", () => {
   }) => {
     await addFromProductPage(page, SHAMPOO);
     await page.goto("/cart");
-    const plus = lines(page).first().getByRole("button", { name: "أكتر" });
+    const plus = lines(page).first().getByRole("button", { name: "المزيد" });
     await plus.waitFor();
     await page.waitForLoadState("networkidle");
     const calls = await actionCalls(page, async () => {
@@ -147,7 +147,7 @@ test.describe("guest cart", () => {
     await addFromProductPage(page, SERUM);
     await page.goto("/cart");
     await expect(summary(page).locator(".lm-freebar")).toBeVisible();
-    await expect(summary(page)).toContainText("لتوصل للشحن المجاني");
+    await expect(summary(page)).toContainText("للحصول على التوصيل المجاني");
     await expect(summary(page)).toContainText("وفّرت");
     await expect(
       summary(page).getByRole("link", { name: "إتمام الطلب" }),
@@ -176,7 +176,7 @@ test.describe("guest cart", () => {
     await setGuestCart(context, [[shampoo.id, 0, 10, shampoo.slug]]);
     await addFromProductPage(page, SHAMPOO);
     await expect(page.locator(".lm-toast").first()).toContainText(
-      /الحد الأقصى|باقي/,
+      /الحد الأقصى|لم يتبقَّ/,
     );
 
     const full = Array.from(
@@ -187,7 +187,7 @@ test.describe("guest cart", () => {
     await setGuestCart(context, full);
     await addFromProductPage(page, SERUM);
     await expect(page.locator(".lm-toast").first()).not.toContainText(
-      "انضاف للسلة",
+      "أُضيف إلى السلة",
     );
   });
 
@@ -198,7 +198,7 @@ test.describe("guest cart", () => {
     await setGuestCart(context, "garbage");
     await setGuestFavorites(context, "v9.e30");
     await page.goto("/cart");
-    await expect(page.getByText("سلتك فاضية")).toBeVisible();
+    await expect(page.getByText("سلتك فارغة")).toBeVisible();
     // Reset: gone, or an empty value (Next.js re-sends cleared request cookies).
     expect((await cookieValue(page, GUEST_CART)) ?? "").toBe("");
     expect((await cookieValue(page, GUEST_FAVORITES)) ?? "").toBe("");
@@ -207,7 +207,7 @@ test.describe("guest cart", () => {
     await page.goto("/cart");
     await expect(lines(page)).toHaveCount(1);
     await expect(lines(page).first()).toContainText("منتج غير متوفر");
-    await expect(lines(page).first()).toContainText("المنتج ما عاد متوفر");
+    await expect(lines(page).first()).toContainText("لم يعد المنتج متوفرًا");
     await expect(
       summary(page).getByRole("button", { name: "إتمام الطلب" }),
     ).toBeDisabled();
@@ -222,14 +222,14 @@ test.describe("guest favorites", () => {
   }) => {
     await page.goto("/");
     const heart = page
-      .getByRole("region", { name: "وصل حديثاً" })
+      .getByRole("region", { name: "وصل حديثًا" })
       .locator("button.lm-fav")
       .first();
     const id = await heart.getAttribute("data-product-id");
     await page.waitForLoadState("networkidle");
     await heart.click();
     await expect(page.locator(".lm-toast").first()).toContainText(
-      "انحفظ بالمفضلة",
+      "أُضيف إلى المفضلة",
     );
     const same = page.locator(`button.lm-fav[data-product-id="${id}"]:visible`);
     for (const button of await same.all())
@@ -241,11 +241,11 @@ test.describe("guest favorites", () => {
 
     await page.goto("/favorites");
     await expect(page.locator(".lm-grid:visible .lm-card")).toHaveCount(1);
-    await page.getByRole("button", { name: /^احذف من المفضلة/ }).click();
+    await page.getByRole("button", { name: /^إزالة من المفضلة/ }).click();
     await expect(page.locator(".lm-toast").first()).toContainText(
-      "انشال من المفضلة",
+      "أُزيل من المفضلة",
     );
-    await expect(page.getByText("المفضلة فاضية")).toBeVisible();
+    await expect(page.getByText("المفضلة فارغة")).toBeVisible();
     await expect(desktopBadge(page, "المفضلة")).toHaveCount(0);
   });
 
@@ -257,17 +257,20 @@ test.describe("guest favorites", () => {
       await page.goto(path);
       await page.waitForLoadState("networkidle");
       await page.locator(".lm-buy .lm-fav-lg:visible").click();
-      await expect(page.locator(".lm-toast").first()).toContainText("انحفظ");
+      await expect(page.locator(".lm-toast").first()).toContainText("أُضيف");
     }
     await page.goto("/favorites");
     for (let i = 0; i < 2; i++) {
-      await page.getByRole("button", { name: "انقل للسلة" }).first().click();
+      await page
+        .getByRole("button", { name: "انقل إلى السلة" })
+        .first()
+        .click();
       await expect(page.locator(".lm-toast").first()).toContainText(
-        "انتقل للسلة",
+        "نُقل إلى السلة",
       );
       await page.waitForLoadState("networkidle");
     }
-    await expect(page.getByText("المفضلة فاضية")).toBeVisible();
+    await expect(page.getByText("المفضلة فارغة")).toBeVisible();
     await page.goto("/cart");
     await expect(lines(page)).toHaveCount(2);
     const first = lipstick.variants.find((v) => v.stock_status !== "out");
@@ -288,7 +291,7 @@ test.describe("guest favorites", () => {
     await page.waitForLoadState("networkidle");
     const heart = page.locator(".lm-buy .lm-fav-lg:visible");
     await heart.click();
-    await expect(page.locator(".lm-toast").first()).not.toContainText("انحفظ");
+    await expect(page.locator(".lm-toast").first()).not.toContainText("أُضيف");
     await expect(heart).toHaveAttribute("aria-pressed", "false");
   });
 });
@@ -303,17 +306,23 @@ test.describe("login merge", () => {
     const { phone, pair } = await register(accounts);
     await addFromProductPage(page, SHAMPOO);
     await addFromProductPage(page, SERUM);
-    await page.locator(".lm-buy .lm-fav-lg:visible").click();
-    await expect(page.locator(".lm-toast").first()).toContainText("انحفظ");
+    const heart = page.locator(".lm-buy .lm-fav-lg:visible");
+    await heart.click();
+    await expect(heart).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".lm-toast").first()).toContainText(
+      "أُضيف إلى المفضلة",
+    );
 
     await loginThroughSite(page, phone.national, "/cart");
     await expect(page.locator(".lm-toast").first()).toContainText(
-      "رجّعنالك منتجين من سلتك",
+      "أعدنا منتجان إلى سلتك",
     );
     expect(await cookieNames(page)).not.toContain(GUEST_CART);
     expect(await cookieNames(page)).not.toContain(GUEST_FAVORITES);
     await page.goto("/cart");
     await expect(lines(page)).toHaveCount(2);
+    // Force a fresh server shell after the login action invalidated the badge cache.
+    await page.reload();
     await expect(desktopBadge(page, "المفضلة")).toHaveText("1");
     await checkNoSecrets(page, pair);
   });
@@ -331,8 +340,10 @@ test.describe("login merge", () => {
     ]);
     await loginThroughSite(page, phone.national, "/");
     const toast = page.locator(".lm-toast").first();
-    await expect(toast).toContainText("رجّعنالك منتج واحد من سلتك");
-    await expect(toast).toContainText("بعض المنتجات تعدّلت حسب المخزون");
+    await expect(toast).toContainText("أعدنا منتج واحد إلى سلتك");
+    await expect(toast).toContainText(
+      "عُدّلت بعض المنتجات وفقًا للمخزون المتوفر",
+    );
   });
 });
 
@@ -361,13 +372,13 @@ test.describe("logged in", () => {
     await page.locator(".lm-buy .lm-fav-lg:visible").click();
     await expect(desktopBadge(page, "المفضلة")).toHaveText("1");
     await page.goto("/favorites");
-    await page.getByRole("button", { name: "انقل للسلة" }).click();
+    await page.getByRole("button", { name: "انقل إلى السلة" }).click();
     await expect(page.locator(".lm-toast").first()).toContainText(
-      "انتقل للسلة",
+      "نُقل إلى السلة",
     );
     await expect(desktopBadge(page, "السلة")).toHaveText("2");
     await expect(desktopBadge(page, "المفضلة")).toHaveCount(0);
-    await expect(page.getByText("المفضلة فاضية")).toBeVisible();
+    await expect(page.getByText("المفضلة فارغة")).toBeVisible();
     await page.goto("/cart");
     await expect(lines(page)).toHaveCount(2);
     await checkNoSecrets(page, pair);
@@ -404,13 +415,13 @@ test.describe("without JavaScript", () => {
     await page.waitForURL(SHAMPOO);
     // The flash toast, server-rendered (CSS only).
     await expect(page.locator(".lm-toast.lm-static")).toContainText(
-      "انضاف للسلة",
+      "أُضيف إلى السلة",
     );
 
     await page.locator(".lm-buy .lm-fav-lg").first().click();
     await page.waitForURL(SHAMPOO);
     await expect(page.locator(".lm-toast.lm-static")).toContainText(
-      "انحفظ بالمفضلة",
+      "أُضيف إلى المفضلة",
     );
     await page.goto("/favorites");
     await expect(page.locator(".lm-grid .lm-card")).toHaveCount(1);
@@ -419,7 +430,7 @@ test.describe("without JavaScript", () => {
     await expect(page.locator(".lm-line")).toHaveCount(1);
     await page.locator(".lm-line .l-rm").click();
     await page.waitForURL("/cart");
-    await expect(page.getByText("سلتك فاضية")).toBeVisible();
+    await expect(page.getByText("سلتك فارغة")).toBeVisible();
   });
 });
 

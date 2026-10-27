@@ -12,7 +12,7 @@ import {
 import type { ImageUrls } from "../types";
 
 /**
- * Prototype `pCats()`: tiles for جديد، مكياج، عناية وعطور، شعر، تنزيلات, then ماركات.
+ * Prototype `pCats()`: tiles for جديد، مكياج، عناية وعطور، شعر، التخفيضات، ثم الماركات.
  * Pictures come from the backend when available (category image, else a product image);
  * every tile renders even when the backend is down.
  */

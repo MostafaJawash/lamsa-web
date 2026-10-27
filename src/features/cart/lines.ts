@@ -82,7 +82,7 @@ export function cartError(
 }
 
 /**
- * What the customer reads for an add/update error: "باقي 2 بس" (INSUFFICIENT_STOCK),
+ * What the customer reads for an add/update error (INSUFFICIENT_STOCK),
  * "الحد الأقصى 10" (QUANTITY_LIMIT_EXCEEDED), otherwise the backend's message.
  */
 export function cartErrorText(error: CartError): string {
@@ -123,7 +123,7 @@ export function guestLineError(
 }
 
 /**
- * "حدّث سلتي" for a guest cart: what POST /cart/resolve-issues does to a stored cart
+ * "تحديث السلة" for a guest cart: what POST /cart/resolve-issues does to a stored cart
  * (backend REMOVABLE_ISSUES), read from the preview's line issues.
  */
 export function guestFixes(cart: AnyCart): {

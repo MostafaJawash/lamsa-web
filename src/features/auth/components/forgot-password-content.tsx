@@ -10,7 +10,7 @@ import { support } from "@/config/site";
 import { t } from "@/i18n";
 
 /**
- * "نسيت كلمة السر؟": there is no self-service reset. The store gives a temporary
+ * There is no self-service password reset. The store gives a temporary
  * password by phone (backend README "Forgot password"). shadcn Dialog with the
  * prototype tokens (surface, ink, line, 18px radius). Loaded on the first click by
  * ./forgot-password-dialog.tsx (Radix and tailwind-merge stay out of the page's JS).

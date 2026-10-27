@@ -4,6 +4,7 @@ const PORT = 3100;
 const DOWN_PORT = 3101;
 const DEV_PORT = 3102;
 const CAPTURE_PORT = 3199;
+const PHASE = process.env.E2E_PHASE ?? "all";
 
 const DEV_ONLY = /(backend-down|auth-dev|ip-forwarding)\.spec\.ts/;
 /** Changes stock and store settings: runs alone, after the parallel tests. */
@@ -87,42 +88,54 @@ export default defineConfig({
     },
   ],
   webServer: [
-    {
-      command: `npm run start -- --port ${PORT}`,
-      url: `http://localhost:${PORT}`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 60_000,
-      env: { WEB_TRUST_PROXY_HEADERS: "true" },
-    },
-    {
-      command: `npx next dev --port ${DOWN_PORT}`,
-      url: `http://localhost:${DOWN_PORT}/robots.txt`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
-      // Port 9 (discard) is closed: every backend call fails fast.
-      // Its own build directory, so it runs next to a developer's `npm run dev`.
-      env: {
-        API_BASE_URL: "http://127.0.0.1:9/api/v1",
-        NEXT_DIST_DIR: ".next-e2e",
-      },
-    },
-    {
-      command: `node e2e/support/capture-server.mjs ${CAPTURE_PORT}`,
-      url: `http://127.0.0.1:${CAPTURE_PORT}/__captured`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 30_000,
-    },
-    {
-      command: `npx next dev --port ${DEV_PORT}`,
-      url: `http://localhost:${DEV_PORT}/robots.txt`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
-      env: {
-        API_BASE_URL: `http://127.0.0.1:${CAPTURE_PORT}/api/v1`,
-        NEXT_PUBLIC_GOOGLE_CLIENT_ID: "",
-        WEB_TRUST_PROXY_HEADERS: "false",
-        NEXT_DIST_DIR: ".next-e2e-auth",
-      },
-    },
+    ...(PHASE === "all" || PHASE === "production"
+      ? [
+          {
+            command: `npm run start -- --port ${PORT}`,
+            url: `http://localhost:${PORT}`,
+            reuseExistingServer: !process.env.CI,
+            timeout: 60_000,
+            env: { WEB_TRUST_PROXY_HEADERS: "true" },
+          },
+        ]
+      : []),
+    ...(PHASE === "all" || PHASE === "backend-down"
+      ? [
+          {
+            command: `npx next dev --port ${DOWN_PORT}`,
+            url: `http://localhost:${DOWN_PORT}/robots.txt`,
+            reuseExistingServer: !process.env.CI,
+            timeout: 180_000,
+            // Port 9 (discard) is closed: every backend call fails fast.
+            // Its own build directory, so it runs next to a developer's `npm run dev`.
+            env: {
+              API_BASE_URL: "http://127.0.0.1:9/api/v1",
+              NEXT_DIST_DIR: ".next-e2e",
+            },
+          },
+        ]
+      : []),
+    ...(PHASE === "all" || PHASE === "auth-dev"
+      ? [
+          {
+            command: `node e2e/support/capture-server.mjs ${CAPTURE_PORT}`,
+            url: `http://127.0.0.1:${CAPTURE_PORT}/__captured`,
+            reuseExistingServer: !process.env.CI,
+            timeout: 30_000,
+          },
+          {
+            command: `npx next dev --port ${DEV_PORT}`,
+            url: `http://localhost:${DEV_PORT}/robots.txt`,
+            reuseExistingServer: !process.env.CI,
+            timeout: 180_000,
+            env: {
+              API_BASE_URL: `http://127.0.0.1:${CAPTURE_PORT}/api/v1`,
+              NEXT_PUBLIC_GOOGLE_CLIENT_ID: "",
+              WEB_TRUST_PROXY_HEADERS: "false",
+              NEXT_DIST_DIR: ".next-e2e-auth",
+            },
+          },
+        ]
+      : []),
   ],
 });

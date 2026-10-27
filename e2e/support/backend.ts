@@ -141,6 +141,99 @@ export async function deletePhoneAccount(
   return false;
 }
 
+type AdminUser = {
+  id: number;
+  name: string;
+  phone: string;
+  auth_provider: "phone" | "google";
+  created_at: string;
+  is_active: boolean;
+};
+
+type AdminUserPage = { items: AdminUser[]; pages: number };
+
+/** Removes stale e2e phone accounts through the same public/admin APIs used by tests. */
+export async function deleteStaleE2eAccounts(
+  adminPhone: string,
+  adminPassword: string,
+  olderThan: Date,
+): Promise<number> {
+  const admin = await loginViaApi(adminPhone, adminPassword);
+  let removed = 0;
+  let page = 1;
+  let pages = 1;
+  const stale: AdminUser[] = [];
+  do {
+    const users = await call<AdminUserPage>(
+      "GET",
+      `/admin/users?search=e2e-&page=${page}&page_size=100`,
+      { token: admin.access_token },
+    );
+    pages = users.pages;
+    stale.push(
+      ...users.items.filter(
+        (user) =>
+          user.name.startsWith("e2e-") &&
+          new Date(user.created_at) < olderThan &&
+          user.phone !== adminPhone,
+      ),
+    );
+    page += 1;
+  } while (page <= pages);
+  const googleSubs = staleGoogleSubs(olderThan);
+  for (const user of stale) {
+    if (!user.is_active)
+      await call("PATCH", `/admin/users/${user.id}`, {
+        token: admin.access_token,
+        body: { is_active: true },
+      });
+    if (user.auth_provider === "google") {
+      const sub = googleSubs.get(user.id);
+      if (sub && (await deleteGoogleAccount(sub))) removed += 1;
+    } else {
+      const reset = await call<{ temporary_password: string }>(
+        "POST",
+        `/admin/users/${user.id}/reset-password`,
+        { token: admin.access_token },
+      );
+      if (await deletePhoneAccount(user.phone, [reset.temporary_password]))
+        removed += 1;
+    }
+  }
+  return removed;
+}
+
+function staleGoogleSubs(olderThan: Date): Map<number, string> {
+  const script = `
+import asyncio, json, sys
+from sqlalchemy import text
+from app.db.session import SessionLocal, engine
+async def main():
+    try:
+        async with SessionLocal() as session:
+            rows = (await session.execute(text("SELECT id, google_sub FROM users WHERE name LIKE 'e2e-%' AND auth_provider = 'google' AND created_at < :cutoff"), {"cutoff": sys.argv[1]})).all()
+            print(json.dumps([list(row) for row in rows]))
+    finally:
+        await engine.dispose()
+asyncio.run(main())
+`;
+  const output = execFileSync(
+    backendPython(),
+    ["-c", script, olderThan.toISOString().replace("T", " ").replace("Z", "")],
+    {
+      cwd: BACKEND_DIR,
+      encoding: "utf8",
+      env: { ...process.env, DEBUG: "false", PYTHONIOENCODING: "utf-8" },
+    },
+  );
+  return new Map(
+    (JSON.parse(output) as [number, string][]).map(([id, storedSub]) => [
+      id,
+      storedSub.startsWith("dev-") ? storedSub.slice(4) : storedSub,
+    ]),
+  );
+}
+
 export function devGoogleToken(sub: string, name = "مستخدم تجريبي"): string {
   return `dev-google|${sub}|dev-${sub}@example.test|${name}`;
 }
@@ -172,6 +265,7 @@ export function makeAdmin(phone: string): void {
     {
       cwd: BACKEND_DIR,
       stdio: "pipe",
+      env: { ...process.env, DEBUG: "false" },
     },
   );
 }

@@ -139,37 +139,37 @@ describe("flash cookie", () => {
       adjusted: true,
     });
     expect(flashToast(mergeFlash(report("added", "added", "added")))).toEqual({
-      text: "رجّعنالك 3 منتجات من سلتك",
+      text: "أعدنا 3 منتجات إلى سلتك",
       sub: undefined,
       action: { label: "عرض السلة", href: "/cart" },
     });
     expect(flashToast(mergeFlash(report("added", "skipped")))?.sub).toBe(
-      "بعض المنتجات تعدّلت حسب المخزون",
+      "عُدّلت بعض المنتجات وفقًا للمخزون المتوفر",
     );
     expect(flashToast(mergeFlash(report("added")))?.text).toBe(
-      "رجّعنالك منتج واحد من سلتك",
+      "أعدنا منتج واحد إلى سلتك",
     );
     expect(flashToast(mergeFlash([]))).toBeNull();
     expect(flashToast(mergeFlash(report("skipped")))?.text).toBe(
-      "بعض المنتجات تعدّلت حسب المخزون",
+      "عُدّلت بعض المنتجات وفقًا للمخزون المتوفر",
     );
   });
 
   it("has the prototype toasts", () => {
     expect(flashToast({ kind: "cartAdded" })).toMatchObject({
-      text: "انضاف للسلة",
+      text: "أُضيف إلى السلة",
       action: { label: "عرض السلة", href: "/cart" },
     });
     expect(flashToast({ kind: "favAdded" })).toMatchObject({
-      text: "انحفظ بالمفضلة",
+      text: "أُضيف إلى المفضلة",
       action: { label: "المفضلة" },
     });
     expect(flashToast({ kind: "favRemoved" })).toEqual({
-      text: "انشال من المفضلة",
+      text: "أُزيل من المفضلة",
     });
     expect(
       flashToast({ kind: "error", code: "INSUFFICIENT_STOCK", n: 2 })?.text,
-    ).toBe("باقي 2 بس");
+    ).toBe("لم يتبقَّ سوى 2");
   });
 });
 
@@ -188,7 +188,7 @@ describe("cart errors and issues", () => {
       available: 2,
       max: null,
     });
-    expect(cartErrorText(error)).toBe("باقي 2 بس");
+    expect(cartErrorText(error)).toBe("لم يتبقَّ سوى 2");
     expect(
       cartErrorText(
         cartErrorFrom(
@@ -256,13 +256,13 @@ describe("cart errors and issues", () => {
     expect(lineRef({ ...first, id: 42 } as never)).toBe("42");
     expect(homeQuote(cart)?.code).toBe("home");
     expect(issueText(issue("INSUFFICIENT_STOCK", { available: 3 }))).toBe(
-      "باقي 3 بس",
+      "لم يتبقَّ سوى 3",
     );
     expect(issueText(issue("QUANTITY_LIMIT_EXCEEDED", { max: 10 }))).toBe(
       "الحد الأقصى 10",
     );
     expect(issueText(issue("VARIANT_UNAVAILABLE"))).toBe(
-      "هاد الخيار ما عاد متوفر",
+      "لم يعد هذا الخيار متوفرًا",
     );
   });
 });

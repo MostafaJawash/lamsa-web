@@ -237,7 +237,7 @@ export async function clearCart(): Promise<CartActionResult> {
 }
 
 /**
- * "حدّث سلتي": logged in, POST /cart/resolve-issues; guests, the same fixes applied to
+ * "تحديث السلة": logged in, POST /cart/resolve-issues; guests, the same fixes applied to
  * the cookie from the preview's line issues (see lines.ts guestFixes).
  */
 export async function resolveIssues(): Promise<CartActionResult> {

@@ -11,7 +11,7 @@ const ForgotPasswordContent = dynamic(
 );
 
 /**
- * "نسيت كلمة السر؟" (prototype `.link`). The dialog (Radix, ~15 KB with its helpers)
+ * The forgot-password link (prototype `.link`). The dialog (Radix, ~15 KB with its helpers)
  * loads on the first click; Radix returns the focus to this button when it closes.
  */
 export function ForgotPasswordDialog() {

@@ -11,7 +11,7 @@
 //   node scripts/visual-compare.mjs --prepare cart --base … (writes e2e/screenshots/state-cart.json)
 // --name: a sub-folder for a variant of a feature (e.g. "issues", "empty").
 // Git Bash: prefix with MSYS_NO_PATHCONV=1 so "--path /c/care" is not rewritten.
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -36,6 +36,14 @@ const out = resolve(
   `feature-${feature}${variant ? `-${variant}` : ""}`,
 );
 mkdirSync(out, { recursive: true });
+
+// Copy changes from Levantine Arabic to Modern Standard Arabic are intentional. Keep
+// this note beside every screenshot set so reviewers do not report text-only pixel
+// differences as design regressions.
+writeFileSync(
+  `${out}/comparison-notes.json`,
+  `${JSON.stringify({ intentionalDifferences: ["Arabic wording (MSA)"] }, null, 2)}\n`,
+);
 
 /** Expands the prototype frames so their whole scrollable page is visible. */
 async function expandPrototype(page) {

@@ -68,8 +68,12 @@ test("a sold-out product leaves browsing and comes back; product page, favorites
     }, SLOW)
     .toBe(true);
   await addFromProductPage(page, `/p/${CLEANSER}`);
-  await page.locator(".lm-buy .lm-fav-lg:visible").click();
-  await expect(page.locator(".lm-toast").first()).toContainText("انحفظ");
+  const initialHeart = page.locator(".lm-buy .lm-fav-lg:visible");
+  await initialHeart.click();
+  await expect(initialHeart).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".lm-toast").first()).toContainText(
+    "أُضيف إلى المفضلة",
+  );
 
   // Category, search, brand and related always show it; the home rails only when it is
   // among their newest / on-sale products.
@@ -117,7 +121,7 @@ test("a sold-out product leaves browsing and comes back; product page, favorites
       .toContain("نفدت الكمية");
     await expect(
       page.locator(".lm-hint:visible", {
-        hasText: "ضيفه للمفضلة ومنخبّرك لما يرجع",
+        hasText: "أضِفه إلى المفضلة وسنُعلمك عند توفّره من جديد",
       }),
     ).toBeVisible();
     await expect(page.locator(".lm-buy button.primary:visible")).toBeDisabled();
@@ -126,8 +130,15 @@ test("a sold-out product leaves browsing and comes back; product page, favorites
     await expect(heart).toHaveAttribute("aria-pressed", "true");
     await heart.click();
     await expect(heart).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".lm-toast").first()).toContainText(
+      "أُزيل من المفضلة",
+    );
+    await page.waitForLoadState("networkidle");
     await heart.click();
-    await expect(page.locator(".lm-toast").first()).toContainText("انحفظ");
+    await expect(page.locator(".lm-toast").first()).toContainText(
+      "أُضيف إلى المفضلة",
+    );
+    await expect(heart).toHaveAttribute("aria-pressed", "true");
 
     // Still in favorites (move disabled) and in the cart (with the issue).
     await page.goto("/favorites");
@@ -145,9 +156,17 @@ test("a sold-out product leaves browsing and comes back; product page, favorites
   await expect
     .poll(() => pagesShowing(page, pages, CLEANSER), SLOW)
     .toEqual(pages);
+  // The product-detail cache lives longer than list caches; settle it before the
+  // next serial stock test tries to add this same product.
+  await expect
+    .poll(async () => {
+      await page.goto(`/p/${CLEANSER}`);
+      return page.locator(".lm-buy button.primary:visible").isEnabled();
+    }, SLOW)
+    .toBe(true);
 });
 
-test("every line issue, then حدّث سلتي; checkout only without issues", async ({
+test("every line issue, then update cart; checkout only without issues", async ({
   page,
   accounts,
 }) => {
@@ -172,10 +191,10 @@ test("every line issue, then حدّث سلتي; checkout only without issues", a
     await page.goto("/cart");
     const cart = page.locator(".lm-cart-grid:visible");
     for (const text of [
-      "باقي 1 بس",
+      "لم يتبقَّ سوى 1",
       "نفدت الكمية",
-      "المنتج ما عاد متوفر",
-      "هاد الخيار ما عاد متوفر",
+      "لم يعد المنتج متوفرًا",
+      "لم يعد هذا الخيار متوفرًا",
     ])
       await expect(cart).toContainText(text);
     await expect(page.locator(".lm-line.out:visible")).toHaveCount(4);
@@ -183,11 +202,11 @@ test("every line issue, then حدّث سلتي; checkout only without issues", a
       page.getByRole("button", { name: "إتمام الطلب" }),
     ).toBeDisabled();
     await expect(
-      page.getByText("حدّث سلتك أول لتقدر تكمّل الطلب."),
+      page.getByText("حدّث سلتك أولًا لتتمكن من إتمام الطلب."),
     ).toBeVisible();
 
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: "حدّث سلتي" }).click();
+    await page.getByRole("button", { name: "تحديث السلة" }).click();
     await expect(page.locator(".lm-toast").first()).toBeVisible();
     await expect(page.locator(".lm-line:visible")).toHaveCount(1);
     await expect(page.locator(".lm-line:visible .lm-qty span")).toHaveText("1");
@@ -214,7 +233,7 @@ test("guest: QUANTITY_LIMIT_EXCEEDED in the cart, fixed like resolve-issues", as
       "الحد الأقصى 10",
     );
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: "حدّث سلتي" }).click();
+    await page.getByRole("button", { name: "تحديث السلة" }).click();
     await expect(page.locator(".lm-line:visible .lm-qty span")).toHaveText(
       "10",
     );

@@ -136,7 +136,7 @@ Backend errors → fields (`errors.ts`, unit-tested):
 
 The backend's Arabic message always wins. Buttons are disabled while pending and until hydrated, and the forms use `method="post"`, so a password never lands in a URL. The first invalid field gets the focus; errors use `aria-invalid` and `aria-describedby`.
 
-"نسيت كلمة السر؟" opens a dialog: there is no self-service reset, so the store gives a temporary password by phone (`NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_SUPPORT_WHATSAPP`).
+"نسيت كلمة المرور؟" opens a dialog: there is no self-service reset, so the store gives a temporary password by phone (`NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_SUPPORT_WHATSAPP`).
 
 ### Google sign-in
 
@@ -265,7 +265,7 @@ node scripts/visual-compare.mjs --base http://localhost:3300
 
 This screenshots a prototype feature (`--feature`: 1 home, 2 care list → `/c/care`, 3 velvet lipstick → `/p/demo-velvet-lipstick`, 4 brands → `/brands`; its frames expanded to full height) and the site at the same widths (1158 and 346px) and at 1280×800 and 390×844, in light and dark mode, into `e2e/screenshots/feature-<n>/`. Compare the pairs and fix differences. `npm run test:e2e` also checks 360, 768, 1024 and 1440px: no horizontal scroll, tabbar only below 768px, desktop nav from 768px, nothing hidden behind the tabbar.
 
-**Known, intentional differences:** real product photos instead of the prototype drawings (the demo images carry their own light backgrounds, also in dark mode); brand logos inside the round mark, with the monogram only as a fallback; rail order follows the backend (newest first); category tiles show every top-level category with products, and the desktop columns avoid an orphan tile (1–4 tiles in one row, 5–8 in two balanced rows); the subtitle of the "new" fallback banner is static. Auth (prototype feature 7, `--feature 7 --path /login`): the prototype logs in with an SMS code, the site with a password, so the password field (with a show/hide toggle and the rule hints), the register / forgot-password links and the forgot-password dialog are additions in the prototype's `.fld` / `.inp` / `.link` styles; the real Google button uses Google's own styling; the header's account label has a fixed width (no layout shift); the profile card has a second button (logout from all devices). Cart and favorites (features 6 and 5; `--prepare cart|favorites` fills a guest cart or favorites through the site, then `--state e2e/screenshots/state-<kind>.json`): the item count uses Arabic plural forms ("قطعتين"); the cart adds a "وفّرت" row when there are savings, an issues notice with "حدّث سلتي", issue texts under lines, a disabled checkout button with a hint while the cart has issues, and "إفراغ السلة" after the lines; the line price keeps an 8px gap between the struck and the current price (as `.c-price`).
+**Known, intentional differences:** all customer-facing wording uses Modern Standard Arabic even where the prototype uses Levantine Arabic; real product photos instead of the prototype drawings (the demo images carry their own light backgrounds, also in dark mode); brand logos inside the round mark, with the monogram only as a fallback; rail order follows the backend (newest first); category tiles show every top-level category with products, and the desktop columns avoid an orphan tile (1–4 tiles in one row, 5–8 in two balanced rows); the subtitle of the "new" fallback banner is static. Auth (prototype feature 7, `--feature 7 --path /login`): the prototype logs in with an SMS code, the site with a password, so the password field (with a show/hide toggle and the rule hints), the register / forgot-password links and the forgot-password dialog are additions in the prototype's `.fld` / `.inp` / `.link` styles; the real Google button uses Google's own styling; the header's account label has a fixed width (no layout shift); the profile card has a second button (logout from all devices). Cart and favorites (features 6 and 5; `--prepare cart|favorites` fills a guest cart or favorites through the site, then `--state e2e/screenshots/state-<kind>.json`): the item count uses Arabic plural forms ("قطعتان"); the cart adds a "وفّرت" row when there are savings, an issues notice with "تحديث السلة", issue texts under lines, a disabled checkout button with a hint while the cart has issues, and "إفراغ السلة" after the lines; the line price keeps an 8px gap between the struck and the current price (as `.c-price`).
 
 ## Cart and favorites
 
@@ -285,7 +285,7 @@ The limits are `guestLimits` in `src/config/site.ts` (the backend defaults). An 
 
 ### Merge after login
 
-`src/features/cart/merge.ts`: login, register, Google, complete-profile and the forced password change call `POST /favorites/merge`, then `POST /cart/merge` with the cookies, then clear them (favorites first: merging them twice is harmless). A failure never blocks the sign-in: the cookies stay and `__Host-lamsa_gmerge` asks the proxy to retry **once** on the next page view. The result is a one-shot toast: "رجّعنالك <n> منتجات من سلتك" (lines added, merged or capped), plus "بعض المنتجات تعدّلت حسب المخزون" when anything was capped or skipped. Nothing merged: no toast.
+`src/features/cart/merge.ts`: login, register, Google, complete-profile and the forced password change call `POST /favorites/merge`, then `POST /cart/merge` with the cookies, then clear them (favorites first: merging them twice is harmless). A failure never blocks the sign-in: the cookies stay and `__Host-lamsa_gmerge` asks the proxy to retry **once** on the next page view. The result is a one-shot toast: "أعدنا <counted products> إلى سلتك" (lines added, merged or capped), plus "عُدّلت بعض المنتجات وفقًا للمخزون المتوفر" when anything was capped or skipped. Nothing merged: no toast.
 
 **Flash toasts** (`src/features/cart/flash.ts`): `lamsa_flash` = `v1.<random id>.<kind>[.<a>[.<b>]]` (merge, cartAdded, favAdded, favRemoved, moved, error code). It is readable by JavaScript, so it never holds names, ids or tokens. The client controller shows it once (the id is remembered in sessionStorage) and deletes it. On a document request the proxy hands it to the page in a header and expires it, so a form posted without JavaScript shows it too, as a CSS-only toast.
 
@@ -296,7 +296,7 @@ There is no client component per card. Every heart is `HeartForm`: a real `<form
 **One** client component, `CommerceController`, is mounted once in the layout. It:
 
 - reads the visitor's favorite ids once per page view (a server action: `GET /favorites/ids`, or the cookie) and marks every `[data-product-id]` heart, including hearts that appear later (MutationObserver);
-- takes over heart, "انقل للسلة" and remove-favorite submits by event delegation (capture phase, before React). It flips every heart of that product on the page at once and calls the action. On failure (`FAVORITES_LIMIT_REACHED`, `PRODUCT_NOT_FOUND`) it reverts and shows the error. It shows the prototype toast ("انحفظ بالمفضلة" + "المفضلة", "انشال من المفضلة") and updates the badges;
+- takes over heart, "انقل إلى السلة" and remove-favorite submits by event delegation (capture phase, before React). It flips every heart of that product on the page at once and calls the action. On failure (`FAVORITES_LIMIT_REACHED`, `PRODUCT_NOT_FOUND`) it reverts and shows the error. It shows the toast ("أُضيف إلى المفضلة" + "المفضلة", "أُزيل من المفضلة") and updates the badges;
 - shows flash toasts.
 
 On cached pages, favorited hearts are drawn as outlines until the controller has run (a few hundred ms; color only). The favorites page renders them pressed on the server.
@@ -312,21 +312,21 @@ The guest cart badge counts the cookie's quantities; the cart page re-seeds it f
 
 ### Product page
 
-The add button is a form (`addToCart`) with a pending state and no double submit. Success shows the prototype toast "انضاف للسلة" + "عرض السلة". Errors:
+The add button is a form (`addToCart`) with a pending state and no double submit. Success shows the toast "أُضيف إلى السلة" + "عرض السلة". Errors:
 
-- `INSUFFICIENT_STOCK`: "باقي <n> بس", and the stepper is clamped;
+- `INSUFFICIENT_STOCK`: "لم يتبقَّ سوى <n>", and the stepper is clamped;
 - `OUT_OF_STOCK`: the button is disabled;
 - `QUANTITY_LIMIT_EXCEEDED`: the maximum is shown.
 
-Without JavaScript the same form adds and redirects back with a flash toast. Out of stock: "نفدت الكمية", the button disabled, the heart still working, and the hint "ضيفه للمفضلة ومنخبّرك لما يرجع".
+Without JavaScript the same form adds and redirects back with a flash toast. Out of stock: "نفدت الكمية", the button disabled, the heart still working, and the hint "أضِفه إلى المفضلة وسنُعلمك عند توفّره من جديد".
 
 ### Cart page `/cart`
 
 Prototype `pCart()`: the stored cart (logged in) or the guest preview, rendered by **one** client component, `cart-view.tsx`. It contains:
 
 - `.line` rows: image, name → `/p/<slug>?v=<variant>`, brand + "، " + variant, prices, `.qty.sm`, `.l-rm`;
-- the issue under a faded line: "المنتج ما عاد متوفر", "هاد الخيار ما عاد متوفر", "نفدت الكمية", "باقي <n> بس" or "الحد الأقصى <n>";
-- a notice bar with "حدّث سلتي" when there are issues. Logged in: `POST /cart/resolve-issues`. Guests: the same fixes applied to the cookie from the preview's issues;
+- the issue under a faded line: "لم يعد المنتج متوفرًا", "لم يعد هذا الخيار متوفرًا", "نفدت الكمية", "لم يتبقَّ سوى <n>" or "الحد الأقصى <n>";
+- a notice bar with "تحديث السلة" when there are issues. Logged in: `POST /cart/resolve-issues`. Guests: the same fixes applied to the cookie from the preview's issues;
 - the `.summary`:
   - subtotal and home shipping (or "مجاني");
   - the free-shipping bar from `amount_to_free_shipping`, hidden when the method has no `free_from`;
@@ -341,18 +341,18 @@ Prototype `pCart()`: the stored cart (logged in) or the guest preview, rendered 
 - **Totals:** never computed in the browser; the summary dims while a change is pending. The total row adds the backend's subtotal and fee in integer cents (`addMoney`).
 - **Errors:** an error reverts only that line and shows the message under it.
 
-`/cart` and `/favorites` are **blocking routes** (`export const instant = false`). They are personal, so they are rendered in full per request instead of being streamed into a Suspense hole: they work without JavaScript and nothing is swapped in after the first paint. Both are `noindex` and never cached. If the backend is unavailable, the page is a 200 with "ما قدرنا نجيب سلتك هلق، جرّب بعد شوي". Pages never write cookies, so the guest cart is never lost.
+`/cart` and `/favorites` are **blocking routes** (`export const instant = false`). They are personal, so they are rendered in full per request instead of being streamed into a Suspense hole: they work without JavaScript and nothing is swapped in after the first paint. Both are `noindex` and never cached. If the backend is unavailable, the page is a 200 with "تعذّر تحميل سلتك الآن، يُرجى المحاولة لاحقًا". Pages never write cookies, so the guest cart is never lost.
 
 ### Favorites page `/favorites`
 
-Prototype `pFavs()`: product cards with `.l-actions`, "انقل للسلة" (disabled "نفدت الكمية" when out of stock) and remove. Out-of-stock favorites stay listed.
+Prototype `pFavs()`: product cards with `.l-actions`, "انقل إلى السلة" (disabled "نفدت الكمية" when out of stock) and remove. Out-of-stock favorites stay listed.
 
 - **Paging:** logged in, 24 per page with the list pager; guests, all of them (at most 200).
-- **Move to cart:** logged in, `POST /favorites/{id}/move-to-cart`. Guests add to the guest cart (variable products: the first variant in stock, from the cached product detail) and the product leaves the guest favorites. Toast "انتقل للسلة" + "السلة".
+- **Move to cart:** logged in, `POST /favorites/{id}/move-to-cart`. Guests add to the guest cart (variable products: the first variant in stock, from the cached product detail) and the product leaves the guest favorites. Toast "نُقل إلى السلة" + "السلة".
 
 ### Out of stock while browsing
 
-The backend leaves out-of-stock products out of lists, search, facets and `product_count` (store setting `catalog_hide_out_of_stock`; see "Out of stock while browsing" in the backend README). The site has no filtering logic of its own and no "المتوفر فقط" toggle any more. A category or brand whose products are all sold out shows its "رح نضيف منتجات … قريباً" state and drops out of the home tiles, the category grid and the sitemap. Product pages, favorites and the cart still show such products. The site's own caches follow within 45 s for lists and 120 s for product pages and related rails.
+The backend leaves out-of-stock products out of lists, search, facets and `product_count` (store setting `catalog_hide_out_of_stock`; see "Out of stock while browsing" in the backend README). The site has no filtering logic of its own and no "المتوفر فقط" toggle any more. A category or brand whose products are all sold out shows its "سنضيف منتجات … قريبًا" state and drops out of the home tiles, the category grid and the sitemap. Product pages, favorites and the cart still show such products. The site's own caches follow within 45 s for lists and 120 s for product pages and related rails.
 
 ### Tests
 
@@ -373,7 +373,7 @@ Pages never crash or go blank because of the backend:
   - no categories or no brands: the section is hidden (navigation uses the static config);
   - product without image, or a broken image URL: the prototype bottle silhouette;
   - brand without logo: the monogram on a color hashed from the brand id.
-- **Backend down:** every page still returns 200 with the chrome and the fallbacks. In development a dismissible "الباك إند مش شغال" notice shows at the top.
+- **Backend down:** every page still returns 200 with the chrome and the fallbacks. In development a dismissible "الخادم غير متاح حاليًا" notice shows at the top.
 - Unknown routes use `not-found.tsx` (the prototype `.empty-st`).
 
 ## Catalog pages
