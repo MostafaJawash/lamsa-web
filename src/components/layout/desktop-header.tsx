@@ -7,13 +7,14 @@ import { Wordmark } from "@/components/shared/wordmark";
 import { t } from "@/i18n";
 
 import { AccountEntry, AccountEntryLive } from "./account-entry";
+import { BadgeLive } from "./badge-live";
 import { DesktopNav } from "./desktop-nav";
 
 /**
  * Prototype `desktop()` header: `.d-bar` (logo, search, icons) and `.d-nav`.
- * Count badges come with the cart/favorites features (see `CountBadge`). The account
- * entry is the only session-dependent part: a small <Suspense> hole whose fallback is
- * the guest entry, so the rest of the header stays in the static shell.
+ * Session-dependent parts are small <Suspense> holes, so the rest of the header stays
+ * in the static shell: the account entry (fallback: the guest entry, same size) and the
+ * two count badges (fallback: none; absolutely positioned, so nothing moves).
  */
 export function DesktopHeader() {
   return (
@@ -43,6 +44,9 @@ export function DesktopHeader() {
             aria-label={t("layout.favorites")}
           >
             <HeartIcon />
+            <Suspense fallback={null}>
+              <BadgeLive kind="favorites" />
+            </Suspense>
           </Link>
           <Link
             href="/cart"
@@ -50,6 +54,9 @@ export function DesktopHeader() {
             aria-label={t("layout.cart")}
           >
             <BagIcon />
+            <Suspense fallback={null}>
+              <BadgeLive kind="cart" />
+            </Suspense>
           </Link>
           <Suspense fallback={<AccountEntry firstName={null} />}>
             <AccountEntryLive />

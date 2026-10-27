@@ -59,7 +59,6 @@ function validPair(name: string, value: string, scope: ListScope): boolean {
     case "min_price":
     case "max_price":
       return MONEY.test(value);
-    case "in_stock":
     case "on_sale":
       return value === "true";
     case "sort":
@@ -84,15 +83,8 @@ function validPair(name: string, value: string, scope: ListScope): boolean {
 /** Names that hold one value (the last one wins). */
 function singleValued(name: string): boolean {
   return (
-    [
-      "min_price",
-      "max_price",
-      "in_stock",
-      "on_sale",
-      "sort",
-      "page",
-      "q",
-    ].includes(name) || /^attr\.[a-z0-9_]+\.(min|max)$/.test(name)
+    ["min_price", "max_price", "on_sale", "sort", "page", "q"].includes(name) ||
+    /^attr\.[a-z0-9_]+\.(min|max)$/.test(name)
   );
 }
 

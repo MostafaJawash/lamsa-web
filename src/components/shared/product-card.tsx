@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 import type { ProductCard as ProductCardData } from "@/features/catalog/types";
+import { HeartForm } from "@/features/favorites/components/heart-form";
 import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 import { BackendImage } from "./backend-image";
-import { HeartIcon } from "./icons";
 import { Price } from "./price";
 import { ProductSilhouette } from "./product-art";
 
@@ -26,19 +26,24 @@ export function DiscountBadge({ percent }: { percent: number }) {
 
 type ProductCardProps = {
   product: ProductCardData;
-  /** Where the visitor is now, for the favorites heart (`/login?next=`). */
+  /** Where the visitor is now: the heart comes back here without JavaScript. */
   currentPath: string;
+  /** Favorite state when known on the server (favorites page); else the controller sets it. */
+  favorite?: boolean;
   /** Load the image early (cards above the fold, e.g. the LCP image on mobile). */
   preload?: boolean;
 };
 
 /**
  * Prototype `card()`. The whole card links to the product; the heart sits on top.
- * Server-only: the image fallback works without client code (see BackendImage).
+ * Server-only and cacheable (no visitor data): the image fallback works without client
+ * code (see BackendImage), and the heart is a form whose state the one client
+ * controller fills in (see HeartForm).
  */
 export function ProductCard({
   product,
   currentPath,
+  favorite = false,
   preload = false,
 }: ProductCardProps) {
   const soldOut = !product.in_stock;
@@ -87,14 +92,12 @@ export function ProductCard({
           </span>
         ) : null}
       </Link>
-      {/* Plain link until favorites exist (auth phase): no prefetch or client code per card. */}
-      <a
-        href={`/login?next=${encodeURIComponent(currentPath)}`}
-        className="lm-fav"
-        aria-label={t("card.addFavorite")}
-      >
-        <HeartIcon />
-      </a>
+      <HeartForm
+        productId={product.id}
+        slug={product.slug}
+        next={currentPath}
+        pressed={favorite}
+      />
     </article>
   );
 }

@@ -84,6 +84,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           {t("nav.skipToContent")}
         </a>
+        {/*
+          Without JavaScript, content streamed into a <Suspense> hole stays hidden. The
+          flash toast (a fixed overlay, see CommerceLive) is the one such part a form
+          posted without JavaScript needs to show.
+        */}
+        <noscript>
+          <style>{`div[hidden][id^="S:"]:has(.lm-toast.lm-static){display:block!important}`}</style>
+        </noscript>
         <SiteShell>{children}</SiteShell>
         <DeferredToaster />
       </body>

@@ -7,6 +7,8 @@
 // e2e/screenshots/responsive/ (git-ignored); the JSON report to stdout.
 //
 //   node scripts/responsive-check.mjs [--base http://localhost:3000] [--only /c/care]
+//     [--state e2e/screenshots/state-cart.json]  (cookies, e.g. a guest cart: see
+//     visual-compare.mjs --prepare; /cart and /favorites then show their items)
 // Git Bash: prefix with MSYS_NO_PATHCONV=1.
 import { mkdirSync, writeFileSync } from "node:fs";
 
@@ -19,6 +21,7 @@ function arg(name, fallback) {
 
 const base = arg("base", "http://localhost:3000");
 const only = arg("only", null);
+const state = arg("state", undefined);
 const out = "e2e/screenshots/responsive";
 mkdirSync(out, { recursive: true });
 
@@ -39,7 +42,7 @@ const PAGES = [
   "/",
   "/categories",
   "/c/care",
-  "/c/care?attr.skin_type=%D8%AC%D8%A7%D9%81%D8%A9&in_stock=true&filters=1",
+  "/c/care?attr.skin_type=%D8%AC%D8%A7%D9%81%D8%A9&on_sale=true&filters=1",
   "/c/care?min_price=500",
   "/c/makeup",
   "/new",
@@ -251,6 +254,7 @@ for (const [width, height] of VIEWPORTS) {
     const context = await browser.newContext({
       viewport: { width, height },
       colorScheme: scheme,
+      ...(state ? { storageState: state } : {}),
     });
     const page = await context.newPage();
     for (const path of PAGES) {

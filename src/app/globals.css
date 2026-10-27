@@ -1772,6 +1772,220 @@
   }
 
   /*
+   * .fav.on / .fav-lg.on: the hearts are toggle buttons (aria-pressed) holding both icons;
+   * the pressed state shows the filled one (same box, nothing moves). Their <form> is
+   * layout-neutral.
+   */
+  .lm-fav-form {
+    display: contents;
+  }
+  :is(.lm-fav, .lm-fav-lg) .lm-ic.on,
+  :is(.lm-fav, .lm-fav-lg)[aria-pressed="true"] .lm-ic.off {
+    display: none;
+  }
+  :is(.lm-fav, .lm-fav-lg)[aria-pressed="true"] .lm-ic.on {
+    display: block;
+  }
+  .lm-fav[aria-pressed="true"] {
+    color: var(--lamsa-accent);
+  }
+  .lm-fav-lg[aria-pressed="true"] {
+    color: var(--lamsa-accent);
+    border-color: var(--lamsa-accent);
+  }
+  /* .toast button (the toast's action, e.g. "عرض السلة") */
+  .lm-toast button,
+  .lm-toast.lm-static a {
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+  .lm-toast .t-sub,
+  .lm-toast [data-description] {
+    display: block;
+    font-size: 12.5px;
+    opacity: 0.8;
+  }
+  /* Server-rendered toast (forms posted without JavaScript): shown, then gone after 2.6 s. */
+  .lm-toast.lm-static {
+    position: fixed;
+    inset-inline-start: 50%;
+    bottom: 18px;
+    z-index: 60;
+    transform: translateX(50%);
+    animation: lm-toast-out 0.3s 2.6s forwards;
+  }
+  @keyframes lm-toast-out {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  /* cart: .cart-grid (2 columns from a 760px container), .line, .l-*, .qty.sm, .summary */
+  .lm-cart-grid {
+    display: grid;
+    gap: 22px;
+    margin-top: 16px;
+  }
+  @container (min-width: 760px) {
+    .lm-cart-grid {
+      grid-template-columns: 1fr 330px;
+      align-items: start;
+    }
+  }
+  .lm-line {
+    display: grid;
+    grid-template-columns: 76px 1fr auto auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--lamsa-line);
+  }
+  .lm-line > form {
+    display: contents;
+  }
+  .lm-line .lm-art {
+    border-radius: 12px;
+  }
+  /* A line with an issue looks like an out-of-stock card (.card.out .art). */
+  .lm-line.out .lm-art {
+    opacity: 0.5;
+  }
+  .l-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .l-name {
+    text-align: start;
+    font-weight: 500;
+    color: inherit;
+    text-decoration: none;
+  }
+  .l-var {
+    font-size: 13px;
+    color: var(--lamsa-muted);
+  }
+  /* The line price (prototype `<span>${priceHTML}</span>`), spaced like .c-price on sale. */
+  .l-price {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .l-info .lm-err {
+    margin: 4px 0 0;
+  }
+  .l-rm {
+    position: relative;
+    background: none;
+    border: 0;
+    color: var(--lamsa-muted);
+    cursor: pointer;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+  }
+  .l-rm:hover {
+    background: var(--lamsa-surface-2);
+    color: var(--lamsa-danger);
+  }
+  .lm-qty.sm {
+    height: 36px;
+    border-radius: 10px;
+  }
+  .lm-qty.sm button {
+    width: 32px;
+    font-size: 17px;
+  }
+  .lm-l-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .lm-l-actions > form {
+    display: contents;
+  }
+  .lm-l-actions .primary {
+    flex: 1;
+  }
+  .lm-summary {
+    background: var(--lamsa-surface);
+    border: 1px solid var(--lamsa-line);
+    border-radius: 18px;
+    padding: 20px;
+    transition: opacity 0.15s;
+  }
+  .lm-summary[aria-busy="true"] {
+    opacity: 0.6;
+  }
+  .lm-summary h2 {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .lm-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 15px;
+  }
+  .lm-row.total {
+    font-weight: 700;
+    font-size: 18px;
+    border-top: 1px solid var(--lamsa-line);
+    margin-top: 8px;
+    padding-top: 12px;
+  }
+  .lm-row .free {
+    color: var(--lamsa-ok);
+  }
+  .lm-freebar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--lamsa-surface-2);
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .lm-freebar div {
+    height: 100%;
+    background: var(--lamsa-accent);
+    border-radius: 3px;
+  }
+  .lm-summary .lm-btn {
+    margin-top: 14px;
+  }
+  /* Issues notice above the lines (new, in the .summary box style) and "إفراغ السلة". */
+  .lm-cart-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--lamsa-surface);
+    border: 1px solid var(--lamsa-line);
+    border-radius: 12px;
+    padding: 10px 14px;
+    color: var(--lamsa-danger);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .lm-cart-clear {
+    color: var(--lamsa-muted);
+    font-weight: 500;
+    margin-top: 12px;
+  }
+
+  /*
    * Touch hit areas: the prototype sizes stay as drawn (chips 36px, swatches 36px, size
    * buttons, stepper and icon buttons 40px, heart 34px, text links), an invisible
    * ::before extends the tap area to at least 44px.
@@ -1780,6 +1994,10 @@
   .lm-sw,
   .lm-size,
   .lm-qty button,
+  .l-name,
+  .lm-cart-clear,
+  .lm-l-actions .lm-btn,
+  .lm-cart-notice .lm-btn,
   .lm-tabs button,
   .lm-thumbs button,
   .lm-logo,
@@ -1798,6 +2016,11 @@
   .lm-pager .lm-chip::before,
   .lm-icon-btn::before,
   .lm-fav::before,
+  .l-rm::before,
+  .l-name::before,
+  .lm-cart-clear::before,
+  .lm-l-actions .lm-btn::before,
+  .lm-cart-notice .lm-btn::before,
   .lm-logo::before,
   .lm-more::before,
   .lm-p-brand::before,
@@ -1812,6 +2035,27 @@
 
   /* ---------- Mobile (< 768px): the prototype .m-app overrides ---------- */
   @media (max-width: 767.98px) {
+    /* .m-screen .toast (above the tabbar) */
+    .lm-toast.lm-static {
+      bottom: calc(82px + env(safe-area-inset-bottom));
+    }
+    /* .m-app .line */
+    .lm-line {
+      grid-template-columns: 62px 1fr auto;
+      gap: 10px;
+    }
+    .lm-line .lm-qty {
+      grid-column: 2;
+      grid-row: 2;
+      justify-self: start;
+    }
+    .lm-line .l-rm {
+      grid-column: 3;
+      grid-row: 1;
+    }
+    .lm-line .lm-art {
+      grid-row: span 2;
+    }
     .lm-main {
       padding-bottom: calc(var(--lamsa-tabbar-h) + env(safe-area-inset-bottom));
     }

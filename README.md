@@ -3,7 +3,7 @@
 Customer website of the **Lamsa** (لمسة) beauty store. Arabic only for now, right to left.
 The backend is the FastAPI project in [`../lamsa-backend`](../lamsa-backend); its README describes the API, the auth flow, error codes and image sizes.
 
-> Status: phase 3. The global layout, the home page and the catalog pages (category, brand, new, sale, search, brand grid, product) reproduce the design prototype with real backend data. Authentication works end to end (phone + password, Google, silent refresh, forced password change, logout), and the account page shows the profile card. Cart, favorites, the other account pages and checkout still render just their Arabic title.
+> Status: phase 4. The global layout, the home page and the catalog pages (category, brand, new, sale, search, brand grid, product) reproduce the design prototype with real backend data. Authentication works end to end (phone + password, Google, silent refresh, forced password change, logout), and the account page shows the profile card. Cart and favorites work for guests and logged-in users: hearts everywhere, header and tabbar badges, the cart and favorites pages, and the merge after login. The other account pages and checkout still render just their Arabic title.
 
 ## Stack
 
@@ -59,7 +59,7 @@ src/
   lib/utils.ts              cn()
   proxy.ts                  Next.js 16 Proxy (formerly middleware): silent refresh, auth gates, catalog 404s
 tests/                      Vitest unit tests
-e2e/                        Playwright tests (home, catalog, layout at 4 widths, auth, backend down, dev Google, IP forwarding); e2e/screenshots/ is git-ignored
+e2e/                        Playwright tests (home, catalog, layout at 4 widths, auth, cart and favorites, stock changes, backend down, dev Google, IP forwarding); e2e/screenshots/ is git-ignored
 scripts/start-standalone.mjs  Starts the standalone build with .env files and static assets (used by npm start)
 scripts/visual-compare.mjs    Screenshots the prototype and the site side by side
 scripts/bundle-report.mjs     Client JS per route from the Next.js bundle analyzer
@@ -79,13 +79,17 @@ The admin panel is a separate project; nothing admin lives here.
 
 All are set by server code only (`src/lib/auth/session.ts`): **httpOnly**, `SameSite=Lax`, `path=/`; in production `Secure` with the `__Host-` prefix (no `Domain`, so no subdomain can set them). Locally over http the prefix and `Secure` are dropped. Production must be served over https (browsers treat only `localhost` as secure over http).
 
-| Cookie                  | Holds                                           | maxAge                         |
-| ----------------------- | ----------------------------------------------- | ------------------------------ |
-| `__Host-lamsa_at`       | access token                                    | `expires_in` (900 s)           |
-| `__Host-lamsa_rt`       | refresh token                                   | `refresh_expires_in` (60 days) |
-| `__Host-lamsa_pwc`      | `1` while `user.must_change_password` is true   | like the refresh token         |
-| `__Host-lamsa_su`       | Google `signup_token` (+ Google name and email) | 10 minutes                     |
-| `lamsa_devg` (dev only) | stable fake Google subject of the dev button    | 1 year                         |
+| Cookie                  | Holds                                                           | maxAge                         |
+| ----------------------- | --------------------------------------------------------------- | ------------------------------ |
+| `__Host-lamsa_at`       | access token                                                    | `expires_in` (900 s)           |
+| `__Host-lamsa_rt`       | refresh token                                                   | `refresh_expires_in` (60 days) |
+| `__Host-lamsa_pwc`      | `1` while `user.must_change_password` is true                   | like the refresh token         |
+| `__Host-lamsa_su`       | Google `signup_token` (+ Google name and email)                 | 10 minutes                     |
+| `lamsa_devg` (dev only) | stable fake Google subject of the dev button                    | 1 year                         |
+| `__Host-lamsa_gcart`    | guest cart (see [Cart and favorites](#cart-and-favorites))      | 90 days                        |
+| `__Host-lamsa_gfav`     | guest favorites                                                 | 90 days                        |
+| `__Host-lamsa_gmerge`   | `1` after a failed merge at login (retried once)                | 90 days                        |
+| `lamsa_flash`           | a one-shot toast code (**not** httpOnly; codes and counts only) | 60 s                           |
 
 Tokens are never in localStorage, props, URLs or logs. The e2e tests assert that they never appear in the HTML, the JS/RSC payloads, storage or `document.cookie`.
 
@@ -143,7 +147,7 @@ The backend's Arabic message always wins. Buttons are disabled while pending and
 
 ### Session-dependent UI
 
-The shell stays static. Two small `<Suspense>` holes depend on the session, each with the guest version at the same size as its fallback: the desktop header's account entry ("تسجيل الدخول" → `/login`, or the first name → `/account`) and the tabbar's "حسابي" link (`/login` or `/account`). The account label has a fixed width (the guest label's; longer names end in "…"), so nothing moves (CLS 0).
+The shell stays static. Small `<Suspense>` holes depend on the session, each with a fallback of the same size: the desktop header's account entry ("تسجيل الدخول" → `/login`, or the first name → `/account`), the tabbar's "حسابي" link (`/login` or `/account`), the four count badges (no fallback; they are absolutely positioned) and the commerce controller (renders nothing). The account label has a fixed width (the guest label's; longer names end in "…"), so nothing moves (CLS 0).
 
 ### Client IP forwarding
 
@@ -202,18 +206,18 @@ The mobile apps call the API directly or through Nginx. They are never in `TRUST
 
 ## Scripts
 
-| Script                            |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`                     | Dev server (Turbopack)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `npm run build`                   | Production build (`.next/standalone`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `npm run start`                   | Start the standalone build (`scripts/start-standalone.mjs`: loads `.env*` files like `next start`, copies static assets; `-- --port 3100`)                                                                                                                                                                                                                                                                                                                                                                              |
-| `npm run lint`                    | ESLint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `npm run typecheck`               | `next typegen` (route types) + `tsc --noEmit`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `npm run format` / `format:check` | Prettier write / check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `npm run test`                    | Vitest unit tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `npm run test:e2e`                | Playwright (run `npm run build` first; the backend must run with `TRUSTED_PROXY_IPS=127.0.0.1,::1` and `GOOGLE_DEV_MODE=true`): `chromium` against the production build, `backend-down` against `next dev` with an unreachable backend, `auth-dev` + `ip-forwarding` against one `next dev` behind a recording proxy (dev Google button, forwarded headers). Test accounts are named `e2e-…` and deleted by each test; the global setup creates and deletes a test admin. First time: `npx playwright install chromium` |
-| `npm run gen:api`                 | Regenerate the API types from the running backend                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `npm run audit`                   | `npm audit --omit=dev --audit-level=high` (fails on high/critical runtime issues)                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Script                            |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`                     | Dev server (Turbopack)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `npm run build`                   | Production build (`.next/standalone`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `npm run start`                   | Start the standalone build (`scripts/start-standalone.mjs`: loads `.env*` files like `next start`, copies static assets; `-- --port 3100`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `npm run lint`                    | ESLint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `npm run typecheck`               | `next typegen` (route types) + `tsc --noEmit`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `npm run format` / `format:check` | Prettier write / check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `npm run test`                    | Vitest unit tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `npm run test:e2e`                | Playwright (run `npm run build` first; the backend must run with `TRUSTED_PROXY_IPS=127.0.0.1,::1` and `GOOGLE_DEV_MODE=true`): `chromium` against the production build, then `stock` alone (changes demo stock and the out-of-stock setting through the admin API and restores them; `--project=stock --no-deps` runs it by itself), `backend-down` against `next dev` with an unreachable backend, `auth-dev` + `ip-forwarding` against one `next dev` behind a recording proxy (dev Google button, forwarded headers). Test accounts are named `e2e-…` and deleted by each test; the global setup creates and deletes a test admin. First time: `npx playwright install chromium` |
+| `npm run gen:api`                 | Regenerate the API types from the running backend                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `npm run audit`                   | `npm audit --omit=dev --audit-level=high` (fails on high/critical runtime issues)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 Before every commit: `npm run lint && npm run typecheck && npm run test && npm run build && npm run audit`.
 
@@ -261,7 +265,100 @@ node scripts/visual-compare.mjs --base http://localhost:3300
 
 This screenshots a prototype feature (`--feature`: 1 home, 2 care list → `/c/care`, 3 velvet lipstick → `/p/demo-velvet-lipstick`, 4 brands → `/brands`; its frames expanded to full height) and the site at the same widths (1158 and 346px) and at 1280×800 and 390×844, in light and dark mode, into `e2e/screenshots/feature-<n>/`. Compare the pairs and fix differences. `npm run test:e2e` also checks 360, 768, 1024 and 1440px: no horizontal scroll, tabbar only below 768px, desktop nav from 768px, nothing hidden behind the tabbar.
 
-**Known, intentional differences:** real product photos instead of the prototype drawings (the demo images carry their own light backgrounds, also in dark mode); brand logos inside the round mark, with the monogram only as a fallback; rail order follows the backend (newest first); category tiles show every top-level category with products, and the desktop columns avoid an orphan tile (1–4 tiles in one row, 5–8 in two balanced rows); no count badges or favorite state yet; the subtitle of the "new" fallback banner is static. Auth (prototype feature 7, `--feature 7 --path /login`): the prototype logs in with an SMS code, the site with a password, so the password field (with a show/hide toggle and the rule hints), the register / forgot-password links and the forgot-password dialog are additions in the prototype's `.fld` / `.inp` / `.link` styles; the real Google button uses Google's own styling; the header's account label has a fixed width (no layout shift); the profile card has a second button (logout from all devices).
+**Known, intentional differences:** real product photos instead of the prototype drawings (the demo images carry their own light backgrounds, also in dark mode); brand logos inside the round mark, with the monogram only as a fallback; rail order follows the backend (newest first); category tiles show every top-level category with products, and the desktop columns avoid an orphan tile (1–4 tiles in one row, 5–8 in two balanced rows); the subtitle of the "new" fallback banner is static. Auth (prototype feature 7, `--feature 7 --path /login`): the prototype logs in with an SMS code, the site with a password, so the password field (with a show/hide toggle and the rule hints), the register / forgot-password links and the forgot-password dialog are additions in the prototype's `.fld` / `.inp` / `.link` styles; the real Google button uses Google's own styling; the header's account label has a fixed width (no layout shift); the profile card has a second button (logout from all devices). Cart and favorites (features 6 and 5; `--prepare cart|favorites` fills a guest cart or favorites through the site, then `--state e2e/screenshots/state-<kind>.json`): the item count uses Arabic plural forms ("قطعتين"); the cart adds a "وفّرت" row when there are savings, an issues notice with "حدّث سلتي", issue texts under lines, a disabled checkout button with a hint while the cart has issues, and "إفراغ السلة" after the lines; the line price keeps an 8px gap between the struck and the current price (as `.c-price`).
+
+## Cart and favorites
+
+Everything that decides prices, stock, visibility, issues and limits stays in the backend. The site only stores what a guest picked and renders what the backend computes.
+
+### Guest storage
+
+`src/features/cart/guest-codec.ts` (pure) and `guest-store.ts`: two httpOnly cookies, read only by server code, `"v1." + base64url(JSON)`:
+
+- `__Host-lamsa_gcart`: `[[product_id, variant_id or 0, quantity, product_slug], …]`, at most 50 lines, quantity 1..99;
+- `__Host-lamsa_gfav`: `[[product_id, product_slug], …]`, oldest first, at most 200.
+
+The limits are `guestLimits` in `src/config/site.ts` (the backend defaults). An encoded cookie stays under 3,800 bytes: a cart that would not fit is refused (`CART_LIMIT_REACHED`); 200 favorites always fit, because the slugs of the oldest are dropped (they are only hints). A malformed cookie (another version, bad base64, JSON or shape) is reset by the proxy and logged once per process; single bad entries are dropped. Nothing in them is trusted:
+
+- **Guest cart:** every change writes the cookie and renders `POST /cart/preview`, the same CartOut as `GET /cart` (lines keyed `"<product>:<variant or 0>"`). Add to cart previews the cart **with** the new quantity first; an issue on that line becomes the error the logged-in `POST /cart/items` returns (`INSUFFICIENT_STOCK` with `available`, `OUT_OF_STOCK`, `QUANTITY_LIMIT_EXCEEDED` with `max`, `VARIANT_REQUIRED`, `PRODUCT_NOT_FOUND`); a 51st line is `CART_LIMIT_REACHED`. The cookie is written only when the change is valid.
+- **Guest favorites:** a new id is checked with `GET /products?ids=` (visible products, out-of-stock included); the favorites page reads them the same way (two calls of 100 for 200), newest first.
+
+### Merge after login
+
+`src/features/cart/merge.ts`: login, register, Google, complete-profile and the forced password change call `POST /favorites/merge`, then `POST /cart/merge` with the cookies, then clear them (favorites first: merging them twice is harmless). A failure never blocks the sign-in: the cookies stay and `__Host-lamsa_gmerge` asks the proxy to retry **once** on the next page view. The result is a one-shot toast: "رجّعنالك <n> منتجات من سلتك" (lines added, merged or capped), plus "بعض المنتجات تعدّلت حسب المخزون" when anything was capped or skipped. Nothing merged: no toast.
+
+**Flash toasts** (`src/features/cart/flash.ts`): `lamsa_flash` = `v1.<random id>.<kind>[.<a>[.<b>]]` (merge, cartAdded, favAdded, favRemoved, moved, error code). It is readable by JavaScript, so it never holds names, ids or tokens. The client controller shows it once (the id is remembered in sessionStorage) and deletes it. On a document request the proxy hands it to the page in a header and expires it, so a form posted without JavaScript shows it too, as a CSS-only toast.
+
+### Hearts
+
+There is no client component per card. Every heart is `HeartForm`: a real `<form>` posting to a server action, with a `<button aria-pressed>` holding both icons; CSS shows the filled one when pressed (prototype `.fav.on`), so nothing moves. Without JavaScript it toggles and redirects back. Product cards stay cacheable server components and render unpressed.
+
+**One** client component, `CommerceController`, is mounted once in the layout. It:
+
+- reads the visitor's favorite ids once per page view (a server action: `GET /favorites/ids`, or the cookie) and marks every `[data-product-id]` heart, including hearts that appear later (MutationObserver);
+- takes over heart, "انقل للسلة" and remove-favorite submits by event delegation (capture phase, before React). It flips every heart of that product on the page at once and calls the action. On failure (`FAVORITES_LIMIT_REACHED`, `PRODUCT_NOT_FOUND`) it reverts and shows the error. It shows the prototype toast ("انحفظ بالمفضلة" + "المفضلة", "انشال من المفضلة") and updates the badges;
+- shows flash toasts.
+
+On cached pages, favorited hearts are drawn as outlines until the controller has run (a few hundred ms; color only). The favorites page renders them pressed on the server.
+
+### Badges
+
+Prototype `.badge`, on the desktop heart and bag and on the tabbar's favorites and cart tabs; hidden at 0, "99+" above 99. `CountBadge` subscribes to one tiny store (`badge-store.ts`, `useSyncExternalStore`):
+
+- Small server holes seed it with this request's counts. Logged in: `GET /cart/count` and the length of `GET /favorites/ids`, read once per request. Guests: the cookies.
+- Every cart or favorites action returns the new counts, so all badges follow without a reload.
+
+The guest cart badge counts the cookie's quantities; the cart page re-seeds it from the preview's `items_count`, which leaves out lines with an issue.
+
+### Product page
+
+The add button is a form (`addToCart`) with a pending state and no double submit. Success shows the prototype toast "انضاف للسلة" + "عرض السلة". Errors:
+
+- `INSUFFICIENT_STOCK`: "باقي <n> بس", and the stepper is clamped;
+- `OUT_OF_STOCK`: the button is disabled;
+- `QUANTITY_LIMIT_EXCEEDED`: the maximum is shown.
+
+Without JavaScript the same form adds and redirects back with a flash toast. Out of stock: "نفدت الكمية", the button disabled, the heart still working, and the hint "ضيفه للمفضلة ومنخبّرك لما يرجع".
+
+### Cart page `/cart`
+
+Prototype `pCart()`: the stored cart (logged in) or the guest preview, rendered by **one** client component, `cart-view.tsx`. It contains:
+
+- `.line` rows: image, name → `/p/<slug>?v=<variant>`, brand + "، " + variant, prices, `.qty.sm`, `.l-rm`;
+- the issue under a faded line: "المنتج ما عاد متوفر", "هاد الخيار ما عاد متوفر", "نفدت الكمية", "باقي <n> بس" or "الحد الأقصى <n>";
+- a notice bar with "حدّث سلتي" when there are issues. Logged in: `POST /cart/resolve-issues`. Guests: the same fixes applied to the cookie from the preview's issues;
+- the `.summary`:
+  - subtotal and home shipping (or "مجاني");
+  - the free-shipping bar from `amount_to_free_shipping`, hidden when the method has no `free_from`;
+  - "وفّرت" when there are savings, then the total;
+  - "إتمام الطلب", disabled with a hint while `can_checkout` is false;
+- "إفراغ السلة" with a confirmation dialog, and the empty state.
+
+**State:** `server` is the last cart the backend computed.
+
+- **Optimistic updates:** quantities change at once (`useOptimistic`), debounced per line (300 ms). "−" at 1 removes the line (prototype).
+- **Reconciliation:** every action returns the new cart, which replaces `server`. Server actions run one at a time, in order, so the last answer is the newest state.
+- **Totals:** never computed in the browser; the summary dims while a change is pending. The total row adds the backend's subtotal and fee in integer cents (`addMoney`).
+- **Errors:** an error reverts only that line and shows the message under it.
+
+`/cart` and `/favorites` are **blocking routes** (`export const instant = false`). They are personal, so they are rendered in full per request instead of being streamed into a Suspense hole: they work without JavaScript and nothing is swapped in after the first paint. Both are `noindex` and never cached. If the backend is unavailable, the page is a 200 with "ما قدرنا نجيب سلتك هلق، جرّب بعد شوي". Pages never write cookies, so the guest cart is never lost.
+
+### Favorites page `/favorites`
+
+Prototype `pFavs()`: product cards with `.l-actions`, "انقل للسلة" (disabled "نفدت الكمية" when out of stock) and remove. Out-of-stock favorites stay listed.
+
+- **Paging:** logged in, 24 per page with the list pager; guests, all of them (at most 200).
+- **Move to cart:** logged in, `POST /favorites/{id}/move-to-cart`. Guests add to the guest cart (variable products: the first variant in stock, from the cached product detail) and the product leaves the guest favorites. Toast "انتقل للسلة" + "السلة".
+
+### Out of stock while browsing
+
+The backend leaves out-of-stock products out of lists, search, facets and `product_count` (store setting `catalog_hide_out_of_stock`; see "Out of stock while browsing" in the backend README). The site has no filtering logic of its own and no "المتوفر فقط" toggle any more. A category or brand whose products are all sold out shows its "رح نضيف منتجات … قريباً" state and drops out of the home tiles, the category grid and the sitemap. Product pages, favorites and the cart still show such products. The site's own caches follow within 45 s for lists and 120 s for product pages and related rails.
+
+### Tests
+
+- `npm run test`: the cookie codec, flash codes, the merge toast, error mapping, guest fixes and the badge store.
+- `e2e/cart.spec.ts`: guest and logged-in flows, the merge, badges on desktop and mobile, the debounce, limits, bad cookies, forms without JavaScript, CLS.
+- `e2e/stock.spec.ts`: the `stock` project. It runs alone after the parallel tests because it changes demo stock, activation and the setting through the admin API, and restores them.
 
 ## Data, empty and error states
 
@@ -293,7 +390,7 @@ Category `/c/[slug]`, brand `/brands/[slug]`, `/new`, `/sale` and `/search` shar
 | `min_price`, `max_price`  | `?min_price=5&max_price=14.99`      | the price select writes these (`lt5`, `5to15`, `gt15` are only accepted as `price=`) |
 | `attr.<key>` (repeatable) | `?attr.skin_type=جافة`              | select / multiselect / boolean attributes; numbers as `attr.<key>.min/.max`          |
 | `opt.<key>` (repeatable)  | `?opt.color=أحمر`                   | variant options (swatches, sizes)                                                    |
-| `in_stock`, `on_sale`     | `?in_stock=true`                    |                                                                                      |
+| `on_sale`                 | `?on_sale=true`                     | no `in_stock`: browsing never lists out-of-stock products (an old one is ignored)    |
 | `sort`                    | `?sort=price_asc`                   | `newest` (default), `price_asc`, `price_desc`; `relevance` on search                 |
 | `q`                       | `/search?q=عطر`                     | search only                                                                          |
 | page (in the path)        | `/c/care/page/2?brand=x`            | page 1 is the list path; search keeps `?page=2` (noindex)                            |
@@ -305,7 +402,7 @@ Category `/c/[slug]`, brand `/brands/[slug]`, `/new`, `/sale` and `/search` shar
 
 **Without JavaScript:** streamed Suspense content is revealed by an inline script, so the filtered result needs JavaScript. The category, brand, new and sale lists therefore use the unfiltered first page (`ListPreview`, part of the prerendered shell) as the Suspense fallback: without JavaScript the visitor sees products, links work, and the selects and the filter form below the results are plain GET forms (they navigate; the result stays unfiltered). On a hard load of a filtered URL with JavaScript, a tiny inline script dims the preview with a loading bar (`data-pending`, no layout shift) until the filtered result streams in. Client-side filter changes keep the previous result until the new one is ready. Search keeps the skeleton fallback.
 
-**Product page** (`/p/[slug]`, prototype `pProduct()`): a single client component (`product-purchase.tsx`) for the gallery, variants, quantity and add button. Thumbnails only with two or more images. A variant is selected with `?v=<variant id>`: the server renders that variant (price, availability, images), and changing it client-side updates the URL with `history.replaceState` (no navigation, no history entry). Without `?v` the first variant in stock is selected. The quantity stepper is bounded by `1..min(10, stock_left)`. The add button shows a toast until the cart exists (TODO).
+**Product page** (`/p/[slug]`, prototype `pProduct()`): a single client component (`product-purchase.tsx`) for the gallery, variants, quantity and add button. Thumbnails only with two or more images. A variant is selected with `?v=<variant id>`: the server renders that variant (price, availability, images), and changing it client-side updates the URL with `history.replaceState` (no navigation, no history entry). Without `?v` the first variant in stock is selected. The quantity stepper is bounded by `1..min(10, stock_left)`. Add to cart and the heart: see [Cart and favorites](#cart-and-favorites).
 
 **404 status:** pages stream their static shell before `notFound()` can run, so an unknown slug would answer 200 (with noindex). `src/proxy.ts` therefore checks document requests to `/p/*`, `/c/*` and `/brands/*` against the backend detail endpoint, and list pages `…/page/[n]` against the product list (a page exists when it has items; 1.5 s timeout), and rewrites unknown ones to the not-found page with status 404. Invalid page segments (`/page/0`, `/page/x`) are a 404 without a backend call. Not checked: RSC requests (client navigations, where the page's own `notFound()` shows the not-found UI), router prefetches (`Next-Router-Prefetch`, `Next-Router-Segment-Prefetch`) and browser prefetches (`Purpose: prefetch`, `Sec-Purpose: prefetch…`). Results are cached in memory per server process (`existence.ts`: existing slugs 5 minutes, unknown slugs 60 seconds, at most 5,000 entries, least recently used evicted). Backend down, slow or 5xx: passed through, and the page shows its unavailable state.
 
@@ -340,7 +437,7 @@ node scripts/lighthouse-runs.mjs --runs 5  # mobile; add --desktop for desktop
 
 Rules that keep the client small:
 
-- **No client component per item.** Cards, tiles and images are server components; client code is limited to the tabbar (active tab), the back button, the section error boundaries, the deferred Toaster, the list filter controls and the product purchase box. Use `clsx` (not `cn()`, which pulls tailwind-merge) in client components with static class lists.
+- **No client component per item.** Cards, tiles, images and hearts are server components; client code is limited to the tabbar (active tab), the back button, the section error boundaries, the deferred Toaster, the list filter controls, the product purchase box, the count badges, the one commerce controller (hearts, toasts) and the cart view. Use `clsx` (not `cn()`, which pulls tailwind-merge) in client components with static class lists.
 - **Fonts:** only the weights the prototype uses: IBM Plex Sans Arabic 400/500/600/700 (Arabic + Latin preloaded, as the body font) and Reem Kufi 600/700 (not preloaded). The logo is an SVG wordmark (`scripts/build-wordmark.py` shapes "لمسة" in Reem Kufi 700 with HarfBuzz and writes `src/components/shared/wordmark-data.ts`), so no font swap can move it (CLS 0).
 - **Above the fold:** the first two cards of the first rail and the first banner image are preloaded with high priority.
 

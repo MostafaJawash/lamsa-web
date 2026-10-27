@@ -2,6 +2,23 @@ import type { Route } from "next";
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
+  encodeFlash,
+  FLASH_COOKIE,
+  FLASH_HEADER,
+  flashToast,
+} from "@/features/cart/flash";
+import { decodeCart, decodeFavorites } from "@/features/cart/guest-codec";
+import {
+  clearedGuestCookieSpecs,
+  flashCookieOptions,
+  GUEST_CART_COOKIE,
+  GUEST_FAVORITES_COOKIE,
+  guestCookieOptions,
+  logMalformed,
+  MERGE_RETRY_COOKIE,
+} from "@/features/cart/guest-store";
+import { mergeGuestData } from "@/features/cart/merge";
+import {
   catalogRoute,
   createExistenceChecker,
 } from "@/features/catalog/existence";
@@ -50,7 +67,12 @@ import {
  *    - temporary password (`lamsa_pwc`) → /account/change-password?next=<path>;
  *    - /login, /register with a valid session (GET /users/me) → next or "/";
  *    - /complete-profile without the Google signup cookie → /login.
- * 4. Catalog document requests (see `catalogRoute` in existence.ts): unknown slugs and
+ * 4. Guest cart and favorites cookies (see src/features/cart): a malformed one is
+ *    reset; after a failed merge at login (marker cookie), the merge is retried once
+ *    here with the session; the flash cookie of a redirect (a toast) is handed to the
+ *    page of a document request through a header and expired (shown once, also
+ *    without JavaScript; with JavaScript the client controller reads it itself).
+ * 5. Catalog document requests (see `catalogRoute` in existence.ts): unknown slugs and
  *    list pages past the end get a real 404 (checked against the backend: 1.5 s
  *    timeout, cached per process; backend down → passed through), and the old
  *    `?page=N` URLs and `…/page/1` redirect (308). Only for documents
@@ -77,6 +99,8 @@ type SessionView = {
 /** Cookie changes for the response, mirrored on the forwarded request. */
 class CookieChanges {
   readonly specs: CookieSpec[] = [];
+  /** The flash cookie (not httpOnly): a new value, or "" to expire it. */
+  flash: string | null = null;
 
   constructor(private readonly request: NextRequest) {}
 
@@ -92,6 +116,12 @@ class CookieChanges {
   writeTo(response: NextResponse): NextResponse {
     for (const spec of this.specs)
       response.cookies.set(spec.name, spec.value, spec.options);
+    if (this.flash !== null)
+      response.cookies.set(
+        FLASH_COOKIE,
+        this.flash,
+        flashCookieOptions(this.flash ? undefined : 0),
+      );
     return response;
   }
 }
@@ -147,6 +177,52 @@ async function verifyAccess(
   }
 }
 
+/**
+ * Guest cookies: reset a malformed one; retry a failed login merge once (marker
+ * cookie); returns a flash to show on this page (a merge retry's result).
+ */
+async function syncGuestData(
+  request: NextRequest,
+  session: SessionView,
+  client: ClientContext,
+  changes: CookieChanges,
+): Promise<string | null> {
+  const cart = decodeCart(request.cookies.get(GUEST_CART_COOKIE)?.value);
+  const favorites = decodeFavorites(
+    request.cookies.get(GUEST_FAVORITES_COOKIE)?.value,
+  );
+  for (const [kind, name, decoded] of [
+    ["cart", GUEST_CART_COOKIE, cart],
+    ["favorites", GUEST_FAVORITES_COOKIE, favorites],
+  ] as const) {
+    if (!decoded.malformed) continue;
+    logMalformed(kind);
+    changes.apply([{ name, value: "", options: guestCookieOptions(0) }]);
+  }
+  if (
+    !session.accessToken ||
+    session.mustChangePassword ||
+    !request.cookies.has(MERGE_RETRY_COOKIE)
+  )
+    return null;
+  try {
+    const flash = await mergeGuestData(
+      createApiClient({ accessToken: session.accessToken, client }),
+      cart.items,
+      favorites.items,
+    );
+    changes.apply(clearedGuestCookieSpecs());
+    return flashToast(flash) ? encodeFlash(flash) : null;
+  } catch (error) {
+    // Once: keep the guest cookies (nothing is lost), drop the marker.
+    console.error(`[lamsa] guest merge retry failed: ${String(error)}`);
+    changes.apply([
+      { name: MERGE_RETRY_COOKIE, value: "", options: guestCookieOptions(0) },
+    ]);
+    return null;
+  }
+}
+
 function isDocumentRequest(request: NextRequest): boolean {
   const dest = request.headers.get("sec-fetch-dest");
   return dest === null || dest === "document";
@@ -160,10 +236,13 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     requestId,
   };
   const changes = new CookieChanges(request);
+  let flash: string | null = null;
 
   const forward = (): { request: { headers: Headers } } => {
     const headers = new Headers(request.headers);
     headers.set(REQUEST_ID_HEADER, requestId);
+    headers.delete(FLASH_HEADER);
+    if (flash) headers.set(FLASH_HEADER, flash);
     return { request: { headers } };
   };
   const redirectTo = (location: string, status = 307) =>
@@ -191,6 +270,15 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (pathname === COMPLETE_PROFILE_PATH && !request.cookies.has(SIGNUP_COOKIE))
     return redirectTo(LOGIN_PATH);
+
+  const merged = await syncGuestData(request, session, client, changes);
+  if (isDocumentRequest(request)) {
+    // A flash left by a redirect (or the merge just retried): this page shows it once.
+    flash = merged ?? (request.cookies.get(FLASH_COOKIE)?.value || null);
+    if (flash) changes.flash = "";
+  } else if (merged) {
+    changes.flash = merged; // the client controller shows it
+  }
 
   if (isGuestOnlyPath(pathname) && session.accessToken) {
     const verdict = await verifyAccess(session.accessToken, client);

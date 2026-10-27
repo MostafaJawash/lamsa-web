@@ -6,6 +6,8 @@ const DEV_PORT = 3102;
 const CAPTURE_PORT = 3199;
 
 const DEV_ONLY = /(backend-down|auth-dev|ip-forwarding)\.spec\.ts/;
+/** Changes stock and store settings: runs alone, after the parallel tests. */
+const STOCK = /stock\.spec\.ts/;
 
 /**
  * Projects:
@@ -13,6 +15,9 @@ const DEV_ONLY = /(backend-down|auth-dev|ip-forwarding)\.spec\.ts/;
  *   with WEB_TRUST_PROXY_HEADERS=true like behind our Nginx: each test sends its own
  *   X-Real-IP (e2e/support/fixtures.ts), so the backend's per-IP login limits never
  *   collide between tests. The backend must list 127.0.0.1 in TRUSTED_PROXY_IPS.
+ * - `stock`: the production build too, but alone and after `chromium` (it changes demo
+ *   stock, product activation and the catalog_hide_out_of_stock setting through the
+ *   admin API, and restores them), so no other test sees those changes.
  * - `backend-down`: `next dev` with API_BASE_URL on a closed port, to check that pages
  *   still render with fallbacks. Dev mode, because a production build would serve the
  *   data cached at build time.
@@ -40,7 +45,17 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: DEV_ONLY,
+      testIgnore: [DEV_ONLY, STOCK],
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: `http://localhost:${PORT}`,
+      },
+    },
+    {
+      name: "stock",
+      testMatch: STOCK,
+      dependencies: ["chromium"],
+      fullyParallel: false,
       use: {
         ...devices["Desktop Chrome"],
         baseURL: `http://localhost:${PORT}`,

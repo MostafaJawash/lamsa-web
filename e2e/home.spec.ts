@@ -52,7 +52,7 @@ test.describe("home with data", () => {
     );
   });
 
-  test("product card links to the product and the heart to login", async ({
+  test("product card links to the product; the heart is a toggle form", async ({
     page,
   }) => {
     await page.goto("/");
@@ -64,10 +64,9 @@ test.describe("home with data", () => {
       "href",
       /^\/p\//,
     );
-    await expect(card.locator(".lm-fav")).toHaveAttribute(
-      "href",
-      "/login?next=%2F",
-    );
+    const heart = card.locator("form[data-lm-form=fav] button.lm-fav");
+    await expect(heart).toHaveAttribute("aria-pressed", /^(true|false)$/);
+    await expect(card.locator("form input[name=next]")).toHaveValue("/");
   });
 });
 

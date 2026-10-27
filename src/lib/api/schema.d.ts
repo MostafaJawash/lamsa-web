@@ -490,6 +490,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cart/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cart Count
+         * @description The badge numbers only: items_count and lines_count exactly as in GET /cart.
+         */
+        get: operations["cart_count_api_v1_cart_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cart/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Cart
+         * @description Public (an Authorization header is ignored): the cart for items kept on a device (guests),
+         *     computed exactly like GET /cart without storing anything. Lines carry a `key`
+         *     ("<product_id>:<variant_id or 0>") instead of an id; unknown or hidden products come back as
+         *     UNAVAILABLE lines; the same product and variant twice become one line (notice LINES_MERGED).
+         */
+        post: operations["preview_cart_api_v1_cart_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cart/items": {
         parameters: {
             query?: never;
@@ -1574,6 +1617,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Settings
+         * @description The store settings managed here, with their current values (defaults when not stored).
+         */
+        get: operations["get_settings_api_v1_admin_settings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Settings
+         * @description Change one or more settings. Every change invalidates the catalog caches.
+         */
+        patch: operations["update_settings_api_v1_admin_settings_patch"];
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -2146,6 +2213,28 @@ export interface components {
          * @enum {string}
          */
         AdminProductSort: "newest" | "name" | "price_asc" | "price_desc" | "stock_asc";
+        /**
+         * AdminSettingsOut
+         * @description The settings the admin API manages (registry: app.modules.settings.admin).
+         */
+        AdminSettingsOut: {
+            /**
+             * Catalog Hide Out Of Stock
+             * @description Out-of-stock products are left out of browsing (product lists, search, facets, category and brand product counts, card swatches). Product pages, `?ids=`, cart and favorites still show them.
+             */
+            catalog_hide_out_of_stock: boolean;
+        };
+        /**
+         * AdminSettingsUpdate
+         * @description Only the keys sent are changed; unknown keys and wrong types are a 422.
+         */
+        AdminSettingsUpdate: {
+            /**
+             * Catalog Hide Out Of Stock
+             * @description Out-of-stock products are left out of browsing (product lists, search, facets, category and brand product counts, card swatches). Product pages, `?ids=`, cart and favorites still show them.
+             */
+            catalog_hide_out_of_stock?: boolean | null;
+        };
         /** AdminUserOut */
         AdminUserOut: {
             /** Id */
@@ -2564,6 +2653,16 @@ export interface components {
             /** Quantity */
             quantity: number;
         };
+        /** CartCountOut */
+        CartCountOut: {
+            /**
+             * Items Count
+             * @description Sum of quantities of lines without issues, as in the cart
+             */
+            items_count: number;
+            /** Lines Count */
+            lines_count: number;
+        };
         /**
          * CartIssue
          * @description Problems of a cart line, reported on reads (not errors; the line is still returned).
@@ -2591,8 +2690,6 @@ export interface components {
         };
         /** CartLineOut */
         CartLineOut: {
-            /** Id */
-            id: number;
             /** Quantity */
             quantity: number;
             product: components["schemas"]["CartProduct"];
@@ -2627,6 +2724,8 @@ export interface components {
              */
             items: components["schemas"]["CartBundleItem"][];
             issue: components["schemas"]["LineIssue"] | null;
+            /** Id */
+            id: number;
         };
         /** CartMerge */
         CartMerge: {
@@ -2706,6 +2805,99 @@ export interface components {
         CartOut: {
             /** Lines */
             lines: components["schemas"]["CartLineOut"][];
+            /**
+             * Items Count
+             * @description Sum of quantities of lines without issues
+             */
+            items_count: number;
+            /** Lines Count */
+            lines_count: number;
+            /**
+             * Subtotal
+             * @description Lines without issues only
+             * @example 8.95
+             */
+            subtotal: string;
+            /**
+             * Savings
+             * @example 8.95
+             */
+            savings: string;
+            /** Delivery Quotes */
+            delivery_quotes: components["schemas"]["DeliveryQuote"][];
+            /** Can Checkout */
+            can_checkout: boolean;
+            /** Issues Count */
+            issues_count: number;
+            /**
+             * Notices
+             * @description What THIS request changed (empty on plain reads)
+             */
+            notices: components["schemas"]["CartNoticeOut"][];
+        };
+        /** CartPreview */
+        CartPreview: {
+            /** Items */
+            items: components["schemas"]["CartPreviewItem"][];
+        };
+        /** CartPreviewItem */
+        CartPreviewItem: {
+            /** Product Id */
+            product_id: number;
+            /** Variant Id */
+            variant_id?: number | null;
+            /** Quantity */
+            quantity: number;
+        };
+        /** CartPreviewLineOut */
+        CartPreviewLineOut: {
+            /** Quantity */
+            quantity: number;
+            product: components["schemas"]["CartProduct"];
+            variant: components["schemas"]["CartVariant"] | null;
+            image: components["schemas"]["ImageUrls"] | null;
+            /**
+             * Unit Price
+             * @example 8.95
+             */
+            unit_price: string;
+            /**
+             * Regular Price
+             * @example 8.95
+             */
+            regular_price: string;
+            /** Compare At Price */
+            compare_at_price: string | null;
+            /** Discount Percent */
+            discount_percent: number | null;
+            /**
+             * Line Total
+             * @description unit_price x quantity; 0 for lines with an issue
+             * @example 8.95
+             */
+            line_total: string;
+            stock_status: components["schemas"]["StockStatus"];
+            /** Stock Left */
+            stock_left: number | null;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["CartBundleItem"][];
+            issue: components["schemas"]["LineIssue"] | null;
+            /**
+             * Key
+             * @description "<product_id>:<variant_id or 0>", stable for the same product and variant
+             */
+            key: string;
+        };
+        /**
+         * CartPreviewOut
+         * @description GET /cart's response for items kept on a device (nothing is stored).
+         */
+        CartPreviewOut: {
+            /** Lines */
+            lines: components["schemas"]["CartPreviewLineOut"][];
             /**
              * Items Count
              * @description Sum of quantities of lines without issues
@@ -4845,6 +5037,8 @@ export interface operations {
             query?: {
                 /** @description Default: relevance with q, else newest */
                 sort?: components["schemas"]["ProductSort"] | null;
+                /** @description Comma-separated product ids (at most 100, positive integers), e.g. for favorites kept on a device. Returns the visible ones among them, out-of-stock products included, in the order given unless `sort` is set; `page` / `page_size` apply; every other filter is ignored. */
+                ids?: string | null;
                 /** @description Category slug (includes its children) */
                 category?: string | null;
                 /** @description Brand slug, repeatable (OR) */
@@ -5028,6 +5222,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CartOut"];
+                };
+            };
+        };
+    };
+    cart_count_api_v1_cart_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartCountOut"];
+                };
+            };
+        };
+    };
+    preview_cart_api_v1_cart_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CartPreview"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -7592,6 +7839,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminBannerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_settings_api_v1_admin_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsOut"];
+                };
+            };
+        };
+    };
+    update_settings_api_v1_admin_settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsOut"];
                 };
             };
             /** @description Validation Error */

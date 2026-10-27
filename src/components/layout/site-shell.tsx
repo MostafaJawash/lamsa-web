@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 
 import { SilhouetteSymbol } from "@/components/shared/product-art";
+import { CommerceLive } from "@/features/cart/components/commerce-live";
 
 import { BackendNotice } from "./backend-notice";
 import { DesktopHeader } from "./desktop-header";
 import { Footer } from "./footer";
+import { PageStyleSync } from "./page-style";
 import { TabbarView } from "./tabbar";
 import { TabbarLive } from "./tabbar-live";
 
@@ -19,7 +21,8 @@ import { TabbarLive } from "./tabbar-live";
  *
  * Keep it static: session-dependent UI renders inside small <Suspense> holes whose
  * fallback is the guest version at the same size (the desktop account entry, the
- * tabbar's account link), so the shell is prerendered and nothing moves.
+ * tabbar's account link) or nothing (count badges, the commerce controller for hearts
+ * and toasts), so the shell is prerendered and nothing moves.
  */
 export function SiteShell({ children }: { children: React.ReactNode }) {
   return (
@@ -35,8 +38,14 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
+      <Suspense fallback={null}>
+        <PageStyleSync />
+      </Suspense>
       <Suspense fallback={<TabbarView active={null} accountHref="/account" />}>
         <TabbarLive />
+      </Suspense>
+      <Suspense fallback={null}>
+        <CommerceLive />
       </Suspense>
     </>
   );

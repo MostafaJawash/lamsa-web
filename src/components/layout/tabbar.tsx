@@ -17,6 +17,7 @@ import { t } from "@/i18n";
 // clsx, not cn(): no tailwind-merge in the client bundle for static class lists.
 import { clsx as cn } from "clsx";
 
+import { CountBadge } from "./count-badge";
 import { recordVisit } from "./nav-history";
 
 const ICONS: Record<TabKey, React.ReactNode> = {
@@ -28,15 +29,21 @@ const ICONS: Record<TabKey, React.ReactNode> = {
 };
 
 /**
- * Prototype `.tabbar`: fixed bottom navigation on mobile, active tab in accent.
- * "حسابي" goes to /account when signed in, /login for guests (`accountHref`).
+ * Prototype `.tabbar`: fixed bottom navigation on mobile, active tab in accent, count
+ * badges on favorites and cart. "حسابي" goes to /account when signed in, /login for
+ * guests (`accountHref`).
  */
+type TabCounts = { cart: number; favorites: number };
+
 export function TabbarView({
   active,
   accountHref,
+  counts,
 }: {
   active: TabKey | null;
   accountHref: Route;
+  /** Badges (prototype `.tabbar .badge`); absent in the static fallback. */
+  counts?: TabCounts;
 }) {
   return (
     <nav className="lm-tabbar md:hidden" aria-label={t("layout.tabbar")}>
@@ -49,6 +56,9 @@ export function TabbarView({
         >
           {ICONS[tab.key]}
           <span>{t(tab.labelKey)}</span>
+          {counts && (tab.key === "cart" || tab.key === "favorites") ? (
+            <CountBadge kind={tab.key} initial={counts[tab.key]} />
+          ) : null}
         </Link>
       ))}
     </nav>
@@ -60,12 +70,22 @@ export function TabbarView({
  * <Suspense> with `<TabbarView active={null} accountHref="/account" />`.
  * Always mounted, so it also counts visited pages for the back button (nav-history).
  */
-export function Tabbar({ accountHref }: { accountHref: Route }) {
+export function Tabbar({
+  accountHref,
+  counts,
+}: {
+  accountHref: Route;
+  counts: TabCounts;
+}) {
   const pathname = usePathname();
   useEffect(() => {
     recordVisit();
   }, [pathname]);
   return (
-    <TabbarView active={navState(pathname).tab} accountHref={accountHref} />
+    <TabbarView
+      active={navState(pathname).tab}
+      accountHref={accountHref}
+      counts={counts}
+    />
   );
 }

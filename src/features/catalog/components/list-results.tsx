@@ -86,11 +86,29 @@ export function Pager({
   scope: ListScope;
   total: number;
 }) {
-  const pages = Math.ceil(total / PAGE_SIZE);
+  return (
+    <PagerLinks
+      page={currentPage(filters)}
+      pages={Math.ceil(total / PAGE_SIZE)}
+      href={(n) =>
+        `${hrefWith(basePath, withPage(filters, n, scope))}#lm-results` as Route
+      }
+    />
+  );
+}
+
+/** The pager itself, for any paginated page (lists, favorites). */
+export function PagerLinks({
+  page: requested,
+  pages,
+  href,
+}: {
+  page: number;
+  pages: number;
+  href: (page: number) => Route;
+}) {
   if (pages <= 1) return null;
-  const page = Math.min(currentPage(filters), pages);
-  const href = (n: number) =>
-    `${hrefWith(basePath, withPage(filters, n, scope))}#lm-results` as Route;
+  const page = Math.min(requested, pages);
   const numbers = new Set<number>([1, pages, page - 1, page, page + 1]);
   const list = [...numbers]
     .filter((n) => n >= 1 && n <= pages)
@@ -167,7 +185,7 @@ export async function ListResults({
  * bar, aria-busy) until the streamed result replaces it. Mirrors `parseFilters` loosely:
  * a false positive only shows the indicator for the streaming time.
  */
-const PENDING_SCRIPT = `(function(){var b=document.currentScript.parentElement;var p=new URLSearchParams(location.search);var n=0;p.forEach(function(v,k){if(k==="filters"||k==="q"||!v)return;if(k==="sort"&&v==="newest")return;if(k==="page"&&v==="1")return;if(/^(sort|page|brand|min_price|max_price|price|in_stock|on_sale)$|^(attr|opt)\\./.test(k))n++;});if(n){b.setAttribute("data-pending","");b.setAttribute("aria-busy","true");}})();`;
+const PENDING_SCRIPT = `(function(){var b=document.currentScript.parentElement;var p=new URLSearchParams(location.search);var n=0;p.forEach(function(v,k){if(k==="filters"||k==="q"||!v)return;if(k==="sort"&&v==="newest")return;if(k==="page"&&v==="1")return;if(/^(sort|page|brand|min_price|max_price|price|on_sale)$|^(attr|opt)\\./.test(k))n++;});if(n){b.setAttribute("data-pending","");b.setAttribute("aria-busy","true");}})();`;
 
 /**
  * The Suspense fallback of category, brand, new and sale lists: the unfiltered first

@@ -58,16 +58,20 @@ test.describe("list filters (desktop)", () => {
     await page.getByRole("link", { name: /المزيد من الفلاتر/ }).click();
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
-    await sheet.locator("label.lm-toggle", { hasText: "المتوفر فقط" }).click();
+    // No "in stock only" toggle: browsing never shows out-of-stock products.
+    await expect(
+      sheet.locator("label.lm-toggle", { hasText: "المتوفر فقط" }),
+    ).toHaveCount(0);
+    await sheet.locator("label.lm-toggle", { hasText: "عليه خصم" }).click();
     await sheet.getByRole("button", { name: "اعرض النتائج" }).click();
-    await expect(page).toHaveURL(/in_stock=true/);
+    await expect(page).toHaveURL(/on_sale=true/);
     await expect(
       page.getByRole("link", { name: /المزيد من الفلاتر/ }),
     ).toContainText("2");
 
     // Removable chip.
-    await page.getByRole("link", { name: "شيل الفلتر: المتوفر فقط" }).click();
-    await expect(page).not.toHaveURL(/in_stock/);
+    await page.getByRole("link", { name: "شيل الفلتر: عليه خصم" }).click();
+    await expect(page).not.toHaveURL(/on_sale/);
 
     // Clear all (inside the sheet).
     await page.getByRole("link", { name: /المزيد من الفلاتر/ }).click();
@@ -258,7 +262,7 @@ test.describe("product page", () => {
     await expect(desc).toHaveAttribute("aria-selected", "true");
   });
 
-  test("bundle contents, related rail, JSON-LD and the toast", async ({
+  test("bundle contents, related rail, JSON-LD and add to cart", async ({
     page,
   }) => {
     await page.goto("/p/demo-care-box");
@@ -274,7 +278,7 @@ test.describe("product page", () => {
     expect(ld.some((s) => s.includes('"@type":"Product"'))).toBe(true);
     expect(ld.some((s) => s.includes('"@type":"BreadcrumbList"'))).toBe(true);
     await page.getByRole("button", { name: "أضف إلى السلة" }).click();
-    await expect(page.locator(".lm-toast")).toHaveText("السلة رح تشتغل قريباً");
+    await expect(page.locator(".lm-toast")).toContainText("انضاف للسلة");
   });
 
   test("the product's category tab is active on desktop", async ({ page }) => {

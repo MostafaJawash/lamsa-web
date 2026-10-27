@@ -449,6 +449,13 @@ test.describe("catalog 404 check", () => {
     page,
     request,
   }) => {
+    // A cold or busy server may answer "unknown" (backend check over 1.5 s: passed
+    // through, not cached); the next document request gets the real answer.
+    await expect
+      .poll(async () => (await page.goto("/p/e2e-missing-product"))?.status(), {
+        timeout: 20_000,
+      })
+      .toBe(404);
     const document = await page.goto("/p/e2e-missing-product");
     expect(document?.status()).toBe(404);
     expect(document?.headers()["x-lamsa-catalog-check"]).toBe("missing");

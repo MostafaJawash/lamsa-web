@@ -13,6 +13,7 @@ import type { Route } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { mergeAfterSignIn } from "@/features/cart/merge";
 import { t } from "@/i18n";
 import { getApi, unwrap } from "@/lib/api/client";
 import type { Schema } from "@/lib/api/types";
@@ -63,9 +64,15 @@ async function retryOnceIfBusy<T>(call: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Stores the pair and leaves: to the password change first when it is required. */
+/**
+ * Stores the pair, moves the guest cart and favorites into the account (never blocks:
+ * see mergeAfterSignIn) and leaves: to the password change first when it is required
+ * (the backend refuses the merge until then; it runs after the change).
+ */
 async function signedIn(pair: TokenPair, next: unknown): Promise<never> {
   await setSession(pair);
+  if (!pair.user.must_change_password)
+    await mergeAfterSignIn(pair.access_token);
   if (pair.user.must_change_password)
     redirect(withNext(CHANGE_PASSWORD_PATH, next) as Route);
   redirect(safeNext(next) as Route);
@@ -244,6 +251,7 @@ export async function changePassword(
     });
   }
   await setSession(pair);
+  await mergeAfterSignIn(pair.access_token);
   const target = safeNext(next);
   redirect((target === "/" ? ACCOUNT_PATH : target) as Route);
 }

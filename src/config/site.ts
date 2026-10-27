@@ -67,6 +67,17 @@ export const support = {
   whatsapp: publicEnv.NEXT_PUBLIC_SUPPORT_WHATSAPP,
 } as const;
 
+/**
+ * Guest cart and favorites (kept in cookies, see src/features/cart/guest-codec.ts): the
+ * backend defaults of `cart_max_lines` and `favorites_max`, and the quantity range that
+ * POST /cart/preview accepts per item.
+ */
+export const guestLimits = {
+  cartLines: 50,
+  favorites: 200,
+  maxQuantity: 99,
+} as const;
+
 export type TabKey = "home" | "categories" | "favorites" | "cart" | "account";
 
 /** Mobile tabbar (prototype `tabs`). */

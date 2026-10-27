@@ -65,8 +65,6 @@ export function filterChips(
         label: facets?.brands.find((b) => b.slug === val)?.name ?? val,
         remove: [pair],
       });
-    } else if (name === "in_stock") {
-      chips.push({ label: t("list.inStock"), remove: [pair] });
     } else if (name === "on_sale") {
       chips.push({ label: t("list.onSale"), remove: [pair] });
     } else if (name.startsWith("opt.")) {

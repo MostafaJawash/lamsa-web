@@ -80,3 +80,26 @@ for (const [path, text] of catalogPages) {
     await expect(page.locator(".lm-mhead")).toHaveCount(1);
   });
 }
+
+test("the cart shows the unavailable state and keeps the guest cookie", async ({
+  page,
+  context,
+}) => {
+  // Development server: cookie names without the __Host- prefix.
+  const value = `v1.${Buffer.from(JSON.stringify([[3, 0, 2, "demo"]])).toString("base64url")}`;
+  await context.addCookies([
+    {
+      name: "lamsa_gcart",
+      value,
+      url: "http://localhost:3101",
+      httpOnly: true,
+    },
+  ]);
+  const response = await page.goto("/cart", { timeout: 150_000 });
+  expect(response?.status()).toBe(200);
+  await expect(
+    page.getByText("ما قدرنا نجيب سلتك هلق، جرّب بعد شوي"),
+  ).toBeVisible();
+  const kept = (await context.cookies()).find((c) => c.name === "lamsa_gcart");
+  expect(kept?.value).toBe(value);
+});

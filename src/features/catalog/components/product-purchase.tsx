@@ -4,12 +4,17 @@ import type { Route } from "next";
 // clsx, not cn(): no tailwind-merge in the client bundle for static class lists.
 import { clsx as cn } from "clsx";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useId, useRef, useState, useTransition } from "react";
 
 import { BackendImage } from "@/components/shared/backend-image";
-import { HeartIcon } from "@/components/shared/icons";
 import { Amount } from "@/components/shared/price";
 import { ProductSilhouette } from "@/components/shared/product-art";
+import { addToCart, addToCartForm } from "@/features/cart/actions";
+import { badgeStore } from "@/features/cart/badge-store";
+import { cartErrorText } from "@/features/cart/lines";
+import { showToast } from "@/features/cart/toast";
+import { HeartForm } from "@/features/favorites/components/heart-form";
 import { t } from "@/i18n";
 import { formatPrice } from "@/lib/format";
 
@@ -34,11 +39,19 @@ type ProductPurchaseProps = {
 
 const MAIN_IMAGE_SIZES = "(max-width: 767px) 100vw, 560px";
 
+/** What the last add-to-cart said about a variant (null: the product without variants). */
+type StockLimit = { variantId: number | null; max: number };
+
 /**
  * The product page's interactive area (prototype `pProduct()` gallery + info): option
  * groups, price, availability, quantity, add-to-cart, heart and tabs. Selecting a variant
  * updates everything at once and writes `?v=<id>` with history.replaceState (no
  * navigation, no refetch). The only client component on the product page.
+ *
+ * Add to cart is a form (works without JavaScript: the action adds and redirects back
+ * with a flash toast); with JavaScript it calls the same action, shows the prototype
+ * toast and updates the badges. INSUFFICIENT_STOCK clamps the stepper, OUT_OF_STOCK
+ * disables the button. The heart is the shared HeartForm (the layout's controller).
  */
 export function ProductPurchase({
   product,
@@ -50,14 +63,21 @@ export function ProductPurchase({
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<"desc" | "details">("desc");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [limit, setLimit] = useState<StockLimit | null>(null);
+  const [adding, startAdding] = useTransition();
+  // Unique per page: Next.js keeps visited pages mounted (hidden), ids must not clash.
+  const formId = useId();
+  const router = useRouter();
 
   const variant = findVariant(product, variantId);
   const price = priceView(product, variant);
   const stock = stockView(product, variant);
   const images = imagesFor(product, variant);
-  const max = maxQuantity(stock);
+  const known =
+    limit && limit.variantId === (variant?.id ?? null) ? limit : null;
+  const max = Math.min(maxQuantity(stock), known ? Math.max(known.max, 1) : 99);
   const quantity = Math.min(qty, max);
-  const out = stock.status === "out";
+  const out = stock.status === "out" || known?.max === 0;
   const main = images[Math.min(view, images.length - 1)] ?? null;
   const mainUrls = main?.urls ?? (images.length === 0 ? product.image : null);
 
@@ -92,9 +112,42 @@ export function ProductPurchase({
     tabRefs.current[target]?.focus();
   };
 
-  const loginHref = `/login?next=${encodeURIComponent(
-    `/p/${product.slug}${variantId ? `?v=${variantId}` : ""}`,
-  )}`;
+  const here = `/p/${product.slug}${variantId ? `?v=${variantId}` : ""}`;
+
+  const onAdd = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (adding || out) return;
+    const data = new FormData(event.currentTarget);
+    data.set("js", "1");
+    startAdding(async () => {
+      let result;
+      try {
+        result = await addToCart(data);
+      } catch {
+        showToast({ text: t("errors.generic") });
+        return;
+      }
+      if (result.ok) {
+        badgeStore.set(result.counts);
+        showToast(
+          {
+            text: t("toast.cartAdded"),
+            action: { label: t("toast.cartAction"), href: "/cart" },
+          },
+          (href) => router.push(href),
+        );
+        return;
+      }
+      const { error } = result;
+      const at = variant?.id ?? null;
+      if (error.code === "OUT_OF_STOCK") setLimit({ variantId: at, max: 0 });
+      if (error.code === "INSUFFICIENT_STOCK" && error.available !== null) {
+        setLimit({ variantId: at, max: error.available });
+        setQty(Math.max(1, error.available));
+      }
+      showToast({ text: cartErrorText(error) });
+    });
+  };
 
   return (
     <div className="lm-prod-grid">
@@ -282,6 +335,7 @@ export function ProductPurchase({
               ? t("product.low", { n: stock.left })
               : t("product.inStock")}
         </div>
+        {out ? <p className="lm-hint">{t("product.outHint")}</p> : null}
 
         <div className="lm-buy">
           <div
@@ -308,27 +362,29 @@ export function ProductPurchase({
             </button>
           </div>
           <button
-            type="button"
+            type="submit"
+            form={formId}
             className="lm-btn primary"
-            disabled={out}
-            onClick={() => {
-              // TODO(cart phase): add to the cart (server action) and remove this toast.
-              // sonner is loaded on the first click (the Toaster itself is deferred too).
-              void import("sonner").then(({ toast }) =>
-                toast(t("product.cartSoon")),
-              );
-            }}
+            disabled={out || adding}
+            aria-busy={adding}
           >
             {out ? t("product.out") : t("product.addToCart")}
           </button>
-          <a
-            href={loginHref}
+          <HeartForm
+            productId={product.id}
+            slug={product.slug}
+            next={here}
+            pressed={product.is_favorite}
             className="lm-btn ghost lm-fav-lg"
-            aria-label={t("product.favorite")}
-          >
-            <HeartIcon />
-          </a>
+          />
         </div>
+        <form id={formId} action={addToCartForm} onSubmit={onAdd} hidden>
+          <input type="hidden" name="product_id" value={product.id} />
+          <input type="hidden" name="variant_id" value={variant?.id ?? ""} />
+          <input type="hidden" name="quantity" value={quantity} />
+          <input type="hidden" name="slug" value={product.slug} />
+          <input type="hidden" name="next" value={here} />
+        </form>
 
         <div className="lm-ptabs">
           <div className="lm-tabs" role="tablist">

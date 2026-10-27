@@ -218,7 +218,8 @@
     "discount": "−{percent}٪",
     "soldOut": "نفدت الكمية",
     "addFavorite": "أضف للمفضلة",
-    "colors": "الألوان المتوفرة"
+    "colors": "الألوان المتوفرة",
+    "favorite": "المفضلة"
   },
   "list": {
     "subNew": "آخر المنتجات يلي وصلت.",
@@ -245,7 +246,6 @@
     "maxPrice": "لـ (€)",
     "min": "من",
     "max": "لـ",
-    "inStock": "المتوفر فقط",
     "onSale": "عليه خصم",
     "yes": "نعم",
     "priceRange": "السعر: {range}",
@@ -308,11 +308,74 @@
     "outShort": "(نفد)",
     "bundleTitle": "شو في جوا البوكس",
     "related": "ممكن يعجبك كمان",
-    "cartSoon": "السلة رح تشتغل قريباً",
     "perkShipping": "شحن مجاني للطلبات فوق 49 €",
     "perkPickup": "استلام من المتجر خلال ساعتين",
     "perkCash": "الدفع عند الاستلام",
-    "unavailable": "ما قدرنا نجيب هالمنتج هلأ"
+    "unavailable": "ما قدرنا نجيب هالمنتج هلأ",
+    "outHint": "ضيفه للمفضلة ومنخبّرك لما يرجع",
+    "adding": "عم نضيفه…"
+  },
+  "cart": {
+    "summary": "ملخص الطلب",
+    "subtotal": "المجموع الفرعي",
+    "homeShipping": "الشحن للبيت",
+    "free": "مجاني",
+    "toFree": "باقي {amount} لتوصل للشحن المجاني",
+    "freeReached": "✓ طلبك واصل للشحن المجاني",
+    "savings": "وفّرت",
+    "total": "المجموع",
+    "checkout": "إتمام الطلب",
+    "checkoutHint": "بتختار طريقة التوصيل بالخطوة الجاية.",
+    "fixFirst": "حدّث سلتك أول لتقدر تكمّل الطلب.",
+    "remove": "احذف",
+    "lines": "منتجات السلة",
+    "emptyTitle": "سلتك فاضية",
+    "emptyText": "ضيف منتجات من الأقسام، وبتطلع هون.",
+    "startShopping": "ابدأ التسوق",
+    "unavailable": "ما قدرنا نجيب سلتك هلق، جرّب بعد شوي",
+    "issuesNotice": "في منتجات بسلتك تغيّرت",
+    "resolve": "حدّث سلتي",
+    "updated": "سلتك تحدّثت",
+    "clear": "إفراغ السلة",
+    "clearTitle": "إفراغ السلة؟",
+    "clearText": "رح تنشال كل المنتجات من سلتك.",
+    "clearConfirm": "إفراغ",
+    "cancel": "إلغاء",
+    "unknownProduct": "منتج غير متوفر",
+    "issues": {
+      "UNAVAILABLE": "المنتج ما عاد متوفر",
+      "VARIANT_UNAVAILABLE": "هاد الخيار ما عاد متوفر",
+      "OUT_OF_STOCK": "نفدت الكمية",
+      "INSUFFICIENT_STOCK": "باقي {n} بس",
+      "QUANTITY_LIMIT_EXCEEDED": "الحد الأقصى {n}"
+    },
+    "notices": {
+      "QUANTITY_CAPPED": "تعدّلت الكمية حسب المتوفر",
+      "LINES_MERGED": "انجمع منتجين متطابقين بسطر واحد",
+      "LINE_REMOVED": "انشال منتج ما عاد متوفر"
+    }
+  },
+  "favorites": {
+    "sub": "المنتجات يلي حفظتها، بتقدر تنقلها للسلة بضغطة.",
+    "moveToCart": "انقل للسلة",
+    "remove": "احذف من المفضلة",
+    "emptyTitle": "المفضلة فاضية",
+    "emptyText": "اضغط على القلب بأي منتج لتحفظه هون.",
+    "browseNew": "تصفّح الجديد",
+    "unavailable": "ما قدرنا نجيب المفضلة هلق، جرّب بعد شوي"
+  },
+  "toast": {
+    "favAdded": "انحفظ بالمفضلة",
+    "favRemoved": "انشال من المفضلة",
+    "favAction": "المفضلة",
+    "cartAdded": "انضاف للسلة",
+    "cartAction": "عرض السلة",
+    "moved": "انتقل للسلة",
+    "movedAction": "السلة",
+    "merged": "رجّعنالك {products} من سلتك",
+    "mergedAdjusted": "بعض المنتجات تعدّلت حسب المخزون",
+    "low": "باقي {n} بس",
+    "max": "الحد الأقصى {n}"
   },
   "auth": {
     "or": "أو",

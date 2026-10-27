@@ -21,6 +21,24 @@ export function formatPrice(amount: string): string {
   return `${sign}${grouped},${fraction.padEnd(2, "0")} €`;
 }
 
+/**
+ * Sum of backend money strings ("8.95" + "4.95" → "13.90"), in integer cents, for
+ * display only (the cart total = subtotal + shipping). Non-money input counts as 0.
+ */
+export function addMoney(...amounts: string[]): string {
+  let cents = 0;
+  for (const amount of amounts) {
+    const match = MONEY.exec(amount.trim());
+    if (!match) continue;
+    const [, sign, whole = "0", fraction = ""] = match;
+    const value = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+    cents += sign ? -value : value;
+  }
+  const sign = cents < 0 ? "-" : "";
+  const abs = Math.abs(cents);
+  return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+}
+
 const STORE_TIME_ZONE = "Europe/Berlin";
 
 const dateFormatters = {

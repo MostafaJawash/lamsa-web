@@ -209,16 +209,8 @@ export function FilterPanel({
           );
         })}
 
-        <label className="lm-toggle">
-          <span>{t("list.inStock")}</span>
-          <input
-            type="checkbox"
-            name="in_stock"
-            value="true"
-            defaultChecked={has(filters, "in_stock", "true")}
-          />
-          <span className="track" aria-hidden="true" />
-        </label>
+        {/* No "in stock only" toggle: the backend leaves out-of-stock products out of
+            browsing (store setting catalog_hide_out_of_stock). */}
         {showOnSale ? (
           <label className="lm-toggle">
             <span>{t("list.onSale")}</span>

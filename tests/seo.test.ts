@@ -127,7 +127,7 @@ describe("active filter chips", () => {
     options: [{ key: "size", label: "الحجم", type: "select", values: [] }],
   };
 
-  it("labels every active filter from the facets", () => {
+  it("labels every active filter from the facets (in_stock is no filter any more)", () => {
     const filters = parseFilters(
       new URLSearchParams(
         "brand=demo-ward&attr.skin_type=جافة&opt.size=50 ml&max_price=4.99&in_stock=true",
@@ -138,7 +138,6 @@ describe("active filter chips", () => {
       "السعر: أقل من 5 €",
       "نوع البشرة: جافة",
       "وَرد",
-      "المتوفر فقط",
       "الحجم: 50 ml",
     ]);
   });
