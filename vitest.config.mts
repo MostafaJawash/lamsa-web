@@ -19,6 +19,7 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     env: {
       API_BASE_URL: "http://api.test/api/v1",
+      CHECKOUT_SIGNING_SECRET: "test-checkout-signing-secret-must-have-at-least-32-bytes",
       NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
       NEXT_PUBLIC_MEDIA_BASE_URL: "https://media.test/media",
     },

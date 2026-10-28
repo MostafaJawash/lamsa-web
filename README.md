@@ -245,6 +245,12 @@ Commit `src/lib/api/schema.d.ts` together with the code that uses the changed en
 - **Naming:** files in kebab-case (`page-title.tsx`), components in PascalCase, one feature per folder; import with `@/…`.
 - **Files:** UTF-8 without BOM, LF line endings (`.editorconfig`, `.gitattributes`).
 
+### Production checkout checklist
+
+- Set `CHECKOUT_SIGNING_SECRET` to a unique random value of at least 32 bytes. It is server-only; never use a `NEXT_PUBLIC_` name or commit `.env.local`.
+- Keep the key stable while checkout links may be retried. Rotating it invalidates outstanding checkout-review URLs safely.
+- The checkout URL carries a signed fingerprint containing the attempt UUID, address, delivery method and backend-quoted totals. The website never derives totals; it sends that exact signed snapshot to the backend with the UUID as `Idempotency-Key`.
+
 ## Design fidelity
 
 **Source of truth:** the prototype `../lamsa-backend/docs/prototype/lamsa-presentation.html`: CSS in its `<style>`, markup in the `App` render functions (`desktop()`, `mobile()`, `pHome()`, `card()`, `rail()`, `pCats()`, …). Copy its values exactly (colors, fonts, sizes, spacing, radii, shadows, states); don't restyle.
