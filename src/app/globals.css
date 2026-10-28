@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -1935,15 +1936,18 @@
 
   .lm-location-map {
     display: grid;
-    min-height: 120px;
-    place-items: center;
+    gap: 8px;
     border: 1px dashed var(--line);
     border-radius: 12px;
-    background: linear-gradient(135deg, var(--brand-soft), var(--surface));
+    background: var(--surface);
     color: var(--ink-muted);
     padding: 16px;
     text-align: center;
   }
+
+  .lm-leaflet-map { height: 260px; width: 100%; border-radius: 10px; overflow: hidden; }
+  .lm-map-pin { background: transparent; border: 0; font-size: 28px; }
+  .lm-map-caption { font-size: .85rem; }
   .lm-row {
     display: flex;
     justify-content: space-between;

@@ -1,10 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { createCheckoutAddress } from "../actions";
 
 type Governorate = { code: string; name: string };
+
+const LocationMap = dynamic(
+  () => import("./location-map").then((module) => module.LocationMap),
+  { ssr: false, loading: () => <div className="lm-location-map">تحميل الخريطة…</div> },
+);
 
 /** Browser-only location controls; submitting remains a normal server action. */
 export function CheckoutAddressForm({ governorates }: { governorates: Governorate[] }) {
@@ -29,9 +35,7 @@ export function CheckoutAddressForm({ governorates }: { governorates: Governorat
       <label>التفاصيل<input className="lm-inp" name="details" minLength={10} maxLength={500} required /></label>
       <input type="hidden" name="latitude" value={position?.latitude ?? ""} />
       <input type="hidden" name="longitude" value={position?.longitude ?? ""} />
-      <div className="lm-location-map" aria-label="خريطة الموقع">
-        <span>📍 {position ? `${position.latitude}, ${position.longitude}` : "ضع دبوس الموقع أو استخدم موقعك الحالي"}</span>
-      </div>
+      <LocationMap position={position} onChange={setPosition} />
       <button className="lm-btn ghost" type="button" onClick={useCurrentLocation}>استخدم موقعي الحالي</button>
       {locationError ? <p className="lm-err">{locationError}</p> : null}
       <button className="lm-btn primary" type="submit">حفظ العنوان</button>
