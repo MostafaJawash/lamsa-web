@@ -1932,6 +1932,18 @@
     font-size: 17px;
     font-weight: 700;
   }
+
+  .lm-location-map {
+    display: grid;
+    min-height: 120px;
+    place-items: center;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--brand-soft), var(--surface));
+    color: var(--ink-muted);
+    padding: 16px;
+    text-align: center;
+  }
   .lm-row {
     display: flex;
     justify-content: space-between;

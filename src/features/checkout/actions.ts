@@ -31,6 +31,28 @@ export async function beginCheckout(form: FormData): Promise<void> {
   redirect(`/checkout?state=${encodeURIComponent(state)}`);
 }
 
+/** Save a Syrian delivery address, then return to checkout with it selected. */
+export async function createCheckoutAddress(form: FormData): Promise<void> {
+  const governorate = String(form.get("governorate") ?? "").trim();
+  const details = String(form.get("details") ?? "").trim();
+  const area = String(form.get("area") ?? "").trim();
+  const latitude = String(form.get("latitude") ?? "").trim();
+  const longitude = String(form.get("longitude") ?? "").trim();
+  if (!/^[a-z_]{1,32}$/.test(governorate) || details.length < 10) redirect("/checkout");
+  const api = await getApi();
+  const address = await unwrap(api.POST("/users/me/addresses", {
+    body: {
+      governorate,
+      details,
+      area: area || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      is_default: false,
+    },
+  }));
+  redirect(`/checkout?address=${address.id}`);
+}
+
 export async function placeCheckout(form: FormData): Promise<void> {
   const state = verifyCheckoutFingerprint(String(form.get("state") ?? ""));
   if (!state) redirect("/checkout");
