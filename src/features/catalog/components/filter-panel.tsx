@@ -34,10 +34,13 @@ export function FilterPanel({
 }: FilterPanelProps) {
   const q = value(filters, "q");
   const sort = value(filters, "sort");
+  const currency = (value(filters, "price_currency") ?? "SYP") as "SYP" | "USD";
+  const price = facets.prices.find((item) => item.currency === currency) ?? facets.prices[0];
   return (
     <form id={formId} method="get" action={basePath} className="lm-fpanel">
       {q ? <input type="hidden" name="q" value={q} /> : null}
       {sort ? <input type="hidden" name="sort" value={sort} /> : null}
+      <input type="hidden" name="price_currency" value={currency} />
       <div className="lm-fpanel-body">
         {showBrands && facets.brands.length > 0 ? (
           <fieldset className="lm-fgroup">
@@ -71,7 +74,7 @@ export function FilterPanel({
                 inputMode="decimal"
                 min={0}
                 step="0.01"
-                placeholder={facets.price.min ?? ""}
+                placeholder={price?.min ?? ""}
                 defaultValue={value(filters, "min_price") ?? ""}
               />
             </label>
@@ -84,7 +87,7 @@ export function FilterPanel({
                 inputMode="decimal"
                 min={0}
                 step="0.01"
-                placeholder={facets.price.max ?? ""}
+                placeholder={price?.max ?? ""}
                 defaultValue={value(filters, "max_price") ?? ""}
               />
             </label>

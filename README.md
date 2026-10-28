@@ -237,7 +237,7 @@ Commit `src/lib/api/schema.d.ts` together with the code that uses the changed en
 - **Server code** lives in `src/lib/api`, `src/lib/auth`, `src/lib/env.ts` and `src/features/*/queries.ts`, each starting with `import "server-only"`. Mutations are server actions in `src/features/*/actions.ts`. The ESLint rule `lamsa/no-server-imports-in-client` blocks these imports in `"use client"` files (type-only imports are fine).
 - **Client components** only when needed (state, effects, browser APIs). Add `"use client"` at the top, keep them small and push them to the leaves.
 - **Texts:** never hard-code UI text. Add it to `messages/ar.json` and use `t("section.key")`; keys are type-checked. Plurals: `pluralize(count, "products")`. Designed so a `[locale]` segment can be added later (`src/i18n/config.ts`).
-- **Formatting:** prices with `formatPrice("8.95")` → `8,95 €` (string math, no floats); dates with `formatDate()` (Arabic, Latin digits, Europe/Berlin). Latin digits everywhere, as in the prototype.
+- **Formatting:** prices always receive their backend currency: `formatPrice("15000.00", "SYP")` → `15,000 ل.س`; USD keeps meaningful decimals. Dates use Arabic with Latin digits in `Asia/Damascus`.
 - **Images:** backend images use `BackendImage` (`src/components/shared/backend-image.tsx`): a plain server-rendered `<img>` whose `srcset` lists the three backend files (300 / 800 / 1600w), with `sizes` set to the rendered width. No client component per image. `priority` preloads above-the-fold images (the mobile LCP). For a fallback, render it in the tile _before_ the image (silhouette, monogram); the global module script hides an image that fails to load (`data-failed`) so the fallback shows.
 - **Mixed directions:** any sign, percent or currency next to Arabic text goes in an isolated LTR run (`.lm-num` + `dir="ltr"`), like prices and the discount badge (`−25٪`).
 - **RTL:** use logical utilities only (`ms-/me-`, `ps-/pe-`, `start-/end-`, `border-s/e`, `rounded-s/e`, `text-start/end`, `slide-in-from-start/end`), never `left/right`, `ml/mr`, `pl/pr`. The `Sheet` sides are `start | end | top | bottom`. shadcn is configured with `"rtl": true`, so `npx shadcn@4.21.4 add <component>` generates logical classes; still review each new component.
@@ -270,6 +270,8 @@ This screenshots a prototype feature (`--feature`: 1 home, 2 care list → `/c/c
 ## Cart and favorites
 
 Everything that decides prices, stock, visibility, issues and limits stays in the backend. The site only stores what a guest picked and renders what the backend computes.
+
+Shipping availability comes from each delivery method's `allowed_governorates`. `rif_dimashq` (ريف دمشق) uses provincial shipping by default; an administrator can later add it to the Damascus courier's allowed governorates without a code change.
 
 ### Guest storage
 
@@ -338,7 +340,7 @@ Prototype `pCart()`: the stored cart (logged in) or the guest preview, rendered 
 
 - **Optimistic updates:** quantities change at once (`useOptimistic`), debounced per line (300 ms). "−" at 1 removes the line (prototype).
 - **Reconciliation:** every action returns the new cart, which replaces `server`. Server actions run one at a time, in order, so the last answer is the newest state.
-- **Totals:** never computed in the browser; the summary dims while a change is pending. The total row adds the backend's subtotal and fee in integer cents (`addMoney`).
+- **Totals:** never computed in the browser; the backend returns per-currency subtotals, delivery fees and totals, which the summary renders unchanged.
 - **Errors:** an error reverts only that line and shows the message under it.
 
 `/cart` and `/favorites` are **blocking routes** (`export const instant = false`). They are personal, so they are rendered in full per request instead of being streamed into a Suspense hole: they work without JavaScript and nothing is swapped in after the first paint. Both are `noindex` and never cached. If the backend is unavailable, the page is a 200 with "تعذّر تحميل سلتك الآن، يُرجى المحاولة لاحقًا". Pages never write cookies, so the guest cart is never lost.

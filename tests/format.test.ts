@@ -4,24 +4,24 @@ import { formatDate, formatPrice, pluralize } from "@/lib/format";
 
 describe("formatPrice", () => {
   it("formats the backend's two-decimal strings", () => {
-    expect(formatPrice("8.95")).toBe("8,95 €");
-    expect(formatPrice("0.00")).toBe("0,00 €");
-    expect(formatPrice("49.90")).toBe("49,90 €");
+    expect(formatPrice("8.95", "USD")).toBe("8.95 $");
+    expect(formatPrice("0.00", "USD")).toBe("0 $");
+    expect(formatPrice("49.90", "USD")).toBe("49.9 $");
   });
 
   it("groups thousands without floating-point errors", () => {
-    expect(formatPrice("1234.50")).toBe("1.234,50 €");
-    expect(formatPrice("1000000.01")).toBe("1.000.000,01 €");
+    expect(formatPrice("1234.50", "SYP")).toBe("1,234 ل.س");
+    expect(formatPrice("1000000.01", "SYP")).toBe("1,000,000 ل.س");
   });
 
   it("pads a missing decimal and keeps a sign", () => {
-    expect(formatPrice("12")).toBe("12,00 €");
-    expect(formatPrice("12.5")).toBe("12,50 €");
-    expect(formatPrice("-3.20")).toBe("-3,20 €");
+    expect(formatPrice("12", "USD")).toBe("12 $");
+    expect(formatPrice("12.5", "USD")).toBe("12.5 $");
+    expect(formatPrice("-3.20", "USD")).toBe("-3.2 $");
   });
 
   it("returns anything that is not a money string unchanged", () => {
-    expect(formatPrice("abc")).toBe("abc");
+    expect(formatPrice("abc", "SYP")).toBe("abc");
   });
 });
 

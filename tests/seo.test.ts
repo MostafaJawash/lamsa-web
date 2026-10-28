@@ -75,16 +75,13 @@ describe("metadata builders", () => {
 });
 
 describe("JSON-LD", () => {
-  it("variable product: AggregateOffer with low/high price", () => {
+  it("variable product: backend-selected Offer", () => {
     const data = productJsonLd(lipstick);
     expect(data["@type"]).toBe("Product");
     expect(data.brand).toEqual({ "@type": "Brand", name: "لُمى" });
     expect(data.offers).toMatchObject({
-      "@type": "AggregateOffer",
-      priceCurrency: "EUR",
-      lowPrice: "7.45",
-      highPrice: "8.95",
-      offerCount: 3,
+      "@type": "Offer",
+      priceCurrency: "SYP",
       availability: "https://schema.org/InStock",
     });
     expect(data.url).toBe(`${SITE}/p/demo-velvet-lipstick`);
@@ -94,7 +91,7 @@ describe("JSON-LD", () => {
     expect(productJsonLd(mist).offers).toMatchObject({
       "@type": "Offer",
       price: "4.95",
-      priceCurrency: "EUR",
+      priceCurrency: "SYP",
       availability: "https://schema.org/OutOfStock",
     });
   });
@@ -120,7 +117,7 @@ describe("JSON-LD", () => {
 describe("active filter chips", () => {
   const facets: Facets = {
     brands: [{ slug: "demo-ward", name: "وَرد", count: 2 }],
-    price: { min: "2.95", max: "19.95" },
+    prices: [{ currency: "SYP", min: "2950", max: "19950" }],
     attributes: [
       { key: "skin_type", label: "نوع البشرة", type: "select", values: [] },
     ],
@@ -130,12 +127,12 @@ describe("active filter chips", () => {
   it("labels every active filter from the facets (in_stock is no filter any more)", () => {
     const filters = parseFilters(
       new URLSearchParams(
-        "brand=demo-ward&attr.skin_type=جافة&opt.size=50 ml&max_price=4.99&in_stock=true",
+        "brand=demo-ward&attr.skin_type=جافة&opt.size=50 ml&max_price=4999&in_stock=true",
       ),
       { kind: "category", slug: "care" },
     );
     expect(filterChips(filters, facets).map((c) => c.label)).toEqual([
-      "السعر: أقل من 5 €",
+      "السعر: أقل من 5,000 ل.س",
       "نوع البشرة: جافة",
       "وَرد",
       "الحجم: 50 ml",

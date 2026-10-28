@@ -78,7 +78,11 @@ export function ProductCard({
         ) : null}
         <span className="c-name">{product.name}</span>
         <span className="c-price">
-          <Price price={product.price} compareAt={product.compare_at_price} />
+          <Price
+            price={product.price}
+            compareAt={product.compare_at_price}
+            currency={product.currency}
+          />
         </span>
         {product.swatches.length > 0 ? (
           <span className="c-dots" role="img" aria-label={t("card.colors")}>

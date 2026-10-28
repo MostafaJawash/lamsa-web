@@ -27,6 +27,7 @@ export const lipstick: ProductDetail = {
   slug: "demo-velvet-lipstick",
   name: "أحمر شفاه مخملي",
   type: "variable",
+  currency: "SYP",
   brand: { id: 1, name: "لُمى", slug: "demo-luma" },
   category: { id: 1, name: "مكياج", slug: "makeup" },
   breadcrumb: [{ id: 1, name: "مكياج", slug: "makeup" }],
@@ -77,6 +78,7 @@ export const lipstick: ProductDetail = {
   variants: [
     {
       id: 1,
+      currency: "SYP",
       options: { color: "وردي ترابي" },
       price: "8.95",
       sale_price: null,
@@ -88,6 +90,7 @@ export const lipstick: ProductDetail = {
     },
     {
       id: 2,
+      currency: "SYP",
       options: { color: "أحمر كلاسيكي" },
       price: "9.95",
       sale_price: "7.45",
@@ -99,6 +102,7 @@ export const lipstick: ProductDetail = {
     },
     {
       id: 3,
+      currency: "SYP",
       options: { color: "نيود دافئ" },
       price: "8.95",
       sale_price: null,
@@ -128,6 +132,7 @@ export const mist: ProductDetail = {
   slug: "demo-fresh-body-mist",
   name: "بخاخ جسم منعش",
   type: "simple",
+  currency: "SYP",
   brand: { id: 5, name: "مِسك", slug: "demo-misk" },
   category: { id: 3, name: "عطور", slug: "perfumes" },
   breadcrumb: [

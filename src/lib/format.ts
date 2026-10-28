@@ -2,7 +2,7 @@ import { getMessages, interpolate, type PluralKey } from "@/i18n";
 
 /**
  * Formatting helpers. Numbers use Latin digits, as in the prototype:
- * prices look like "8,95 €" and "1.234,50 €" (store in Germany, Arabic UI).
+ * Prices use Latin digits and their own currency conventions in the Arabic UI.
  */
 
 const MONEY = /^(-)?(\d+)(?:\.(\d{1,2}))?$/;
@@ -11,35 +11,21 @@ const MONEY = /^(-)?(\d+)(?:\.(\d{1,2}))?$/;
  * Formats a backend money string (always two decimals, e.g. "8.95") without going
  * through floating point. Returns the input unchanged if it isn't a money string.
  */
-export function formatPrice(amount: string): string {
+export type DisplayCurrency = "SYP" | "USD";
+
+export function formatPrice(amount: string, currency: DisplayCurrency): string {
   const match = MONEY.exec(amount.trim());
   if (!match) return amount;
   const [, sign = "", whole = "0", fraction = ""] = match;
   const grouped = whole
     .replace(/^0+(?=\d)/, "")
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return `${sign}${grouped},${fraction.padEnd(2, "0")} €`;
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (currency === "SYP") return `${sign}${grouped} ل.س`;
+  const trimmedFraction = fraction.padEnd(2, "0").replace(/0+$/, "");
+  return `${sign}${grouped}${trimmedFraction ? `.${trimmedFraction}` : ""} $`;
 }
 
-/**
- * Sum of backend money strings ("8.95" + "4.95" → "13.90"), in integer cents, for
- * display only (the cart total = subtotal + shipping). Non-money input counts as 0.
- */
-export function addMoney(...amounts: string[]): string {
-  let cents = 0;
-  for (const amount of amounts) {
-    const match = MONEY.exec(amount.trim());
-    if (!match) continue;
-    const [, sign, whole = "0", fraction = ""] = match;
-    const value = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
-    cents += sign ? -value : value;
-  }
-  const sign = cents < 0 ? "-" : "";
-  const abs = Math.abs(cents);
-  return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
-}
-
-const STORE_TIME_ZONE = "Europe/Berlin";
+const STORE_TIME_ZONE = "Asia/Damascus";
 
 const dateFormatters = {
   date: new Intl.DateTimeFormat("ar-u-nu-latn", {

@@ -49,11 +49,15 @@ export const accountNav = [
  * order; the first is the default. The backend normalizes the combined number.
  */
 export const phoneCountryCodes = [
-  "+49",
-  "+33",
-  "+961",
   "+963",
+  "+961",
   "+962",
+  "+90",
+  "+966",
+  "+971",
+  "+974",
+  "+965",
+  "+49",
 ] as const;
 export type PhoneCountryCode = (typeof phoneCountryCodes)[number];
 export const defaultCountryCode: PhoneCountryCode = phoneCountryCodes[0];

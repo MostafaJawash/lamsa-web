@@ -360,6 +360,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/governorates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Governorates */
+        get: operations["list_governorates_api_v1_governorates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/brands": {
         parameters: {
             query?: never;
@@ -1641,6 +1658,40 @@ export interface paths {
         patch: operations["update_settings_api_v1_admin_settings_patch"];
         trace?: never;
     };
+    "/api/v1/admin/delivery-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Delivery Methods */
+        get: operations["list_delivery_methods_api_v1_admin_delivery_methods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/delivery-methods/{method_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Delivery Method */
+        patch: operations["update_delivery_method_api_v1_admin_delivery_methods__method_id__patch"];
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1671,12 +1722,16 @@ export interface components {
         AddressCreate: {
             /** Label */
             label?: string | null;
-            /** City */
-            city: string;
-            /** Street */
-            street: string;
-            /** Building */
-            building?: string | null;
+            /** Governorate */
+            governorate: string;
+            /** Area */
+            area?: string | null;
+            /** Details */
+            details: string;
+            /** Latitude */
+            latitude?: number | string | null;
+            /** Longitude */
+            longitude?: number | string | null;
             /** Notes */
             notes?: string | null;
             /**
@@ -1691,12 +1746,16 @@ export interface components {
             id: number;
             /** Label */
             label: string | null;
-            /** City */
-            city: string;
-            /** Street */
-            street: string;
-            /** Building */
-            building: string | null;
+            /** Governorate */
+            governorate: string;
+            /** Area */
+            area: string | null;
+            /** Details */
+            details: string;
+            /** Latitude */
+            latitude: string | null;
+            /** Longitude */
+            longitude: string | null;
             /** Notes */
             notes: string | null;
             /** Is Default */
@@ -1720,12 +1779,16 @@ export interface components {
         AddressUpdate: {
             /** Label */
             label?: string | null;
-            /** City */
-            city?: string | null;
-            /** Street */
-            street?: string | null;
-            /** Building */
-            building?: string | null;
+            /** Governorate */
+            governorate?: string | null;
+            /** Area */
+            area?: string | null;
+            /** Details */
+            details?: string | null;
+            /** Latitude */
+            latitude?: number | string | null;
+            /** Longitude */
+            longitude?: number | string | null;
             /** Notes */
             notes?: string | null;
             /** Is Default */
@@ -1917,6 +1980,55 @@ export interface components {
              */
             children: components["schemas"]["AdminCategoryNode"][];
         };
+        /** AdminDeliveryMethodOut */
+        AdminDeliveryMethodOut: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Fee
+             * @example 15000.00
+             */
+            fee: string;
+            /** Free From */
+            free_from: string | null;
+            currency: components["schemas"]["Currency"];
+            /** Allowed Governorates */
+            allowed_governorates: string[] | null;
+            /** Fee Paid To Carrier */
+            fee_paid_to_carrier: boolean;
+            /** Requires Address */
+            requires_address: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /** AdminDeliveryMethodUpdate */
+        AdminDeliveryMethodUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Fee */
+            fee?: number | string | null;
+            /** Free From */
+            free_from?: number | string | null;
+            currency?: components["schemas"]["Currency"] | null;
+            /** Allowed Governorates */
+            allowed_governorates?: string[] | null;
+            /** Fee Paid To Carrier */
+            fee_paid_to_carrier?: boolean | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /** AdminImageOut */
         AdminImageOut: {
             /** Id */
@@ -2037,26 +2149,8 @@ export interface components {
             gift_message: string | null;
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
-            /**
-             * Subtotal
-             * @example 8.95
-             */
-            subtotal: string;
-            /**
-             * Discount
-             * @example 8.95
-             */
-            discount: string;
-            /**
-             * Shipping Fee
-             * @example 8.95
-             */
-            shipping_fee: string;
-            /**
-             * Total
-             * @example 8.95
-             */
-            total: string;
+            /** Totals */
+            totals: components["schemas"]["OrderTotalOut"][];
             /** Timeline */
             timeline: components["schemas"]["TimelineStepOut"][];
             /** Cancel Reason */
@@ -2068,6 +2162,8 @@ export interface components {
             history: components["schemas"]["HistoryOut"][];
             /** Allowed Next Statuses */
             allowed_next_statuses: components["schemas"]["OrderStatus"][];
+            /** Map Url */
+            map_url: string | null;
         };
         /** AdminOrderSummaryOut */
         AdminOrderSummaryOut: {
@@ -2086,11 +2182,8 @@ export interface components {
             status_label: string;
             /** Items Count */
             items_count: number;
-            /**
-             * Total
-             * @example 8.95
-             */
-            total: string;
+            /** Totals */
+            totals: components["schemas"]["OrderTotalOut"][];
             /** @description First item's image */
             image: components["schemas"]["ImageUrls"] | null;
             /** Delivery Method Name */
@@ -2101,12 +2194,15 @@ export interface components {
             customer_name: string;
             /** Customer Phone */
             customer_phone: string;
+            /** Map Url */
+            map_url: string | null;
         };
         /** AdminProductListItem */
         AdminProductListItem: {
             /** Id */
             id: number;
             type: components["schemas"]["ProductType"];
+            currency: components["schemas"]["Currency"];
             /** Name */
             name: string;
             /** Slug */
@@ -2118,7 +2214,7 @@ export interface components {
             image: components["schemas"]["ImageUrls"] | null;
             /**
              * Price From
-             * @example 8.95
+             * @example 15000.00
              */
             price_from: string;
             /**
@@ -2150,6 +2246,7 @@ export interface components {
             /** Id */
             id: number;
             type: components["schemas"]["ProductType"];
+            currency: components["schemas"]["Currency"];
             /** Name */
             name: string;
             /** Slug */
@@ -2177,7 +2274,7 @@ export interface components {
             };
             /**
              * Price From
-             * @example 8.95
+             * @example 15000.00
              */
             price_from: string;
             /** In Stock */
@@ -2292,6 +2389,7 @@ export interface components {
         AdminVariantOut: {
             /** Id */
             id: number;
+            currency: components["schemas"]["Currency"];
             /** Sku */
             sku: string;
             /** Options */
@@ -2304,14 +2402,14 @@ export interface components {
             color: string | null;
             /**
              * Price
-             * @example 8.95
+             * @example 15000.00
              */
             price: string;
             /** Sale Price */
             sale_price: string | null;
             /**
              * Current Price
-             * @example 8.95
+             * @example 15000.00
              */
             current_price: string;
             /** Stock */
@@ -2695,14 +2793,15 @@ export interface components {
             product: components["schemas"]["CartProduct"];
             variant: components["schemas"]["CartVariant"] | null;
             image: components["schemas"]["ImageUrls"] | null;
+            currency: components["schemas"]["Currency"];
             /**
              * Unit Price
-             * @example 8.95
+             * @example 15000.00
              */
             unit_price: string;
             /**
              * Regular Price
-             * @example 8.95
+             * @example 15000.00
              */
             regular_price: string;
             /** Compare At Price */
@@ -2712,7 +2811,7 @@ export interface components {
             /**
              * Line Total
              * @description unit_price x quantity; 0 for lines with an issue
-             * @example 8.95
+             * @example 15000.00
              */
             line_total: string;
             stock_status: components["schemas"]["StockStatus"];
@@ -2756,16 +2855,21 @@ export interface components {
             /** Lines Count */
             lines_count: number;
             /**
-             * Subtotal
+             * Subtotals
              * @description Lines without issues only
-             * @example 8.95
              */
-            subtotal: string;
+            subtotals: components["schemas"]["CurrencyAmount"][];
+            /** Savings */
+            savings: components["schemas"]["CurrencyAmount"][];
             /**
-             * Savings
-             * @example 8.95
+             * Delivery Fees
+             * @default []
              */
-            savings: string;
+            delivery_fees: components["schemas"]["CurrencyAmount"][];
+            /** Totals */
+            totals: components["schemas"]["CurrencyAmount"][];
+            /** Selected Delivery Method Code */
+            selected_delivery_method_code?: string | null;
             /** Delivery Quotes */
             delivery_quotes: components["schemas"]["DeliveryQuote"][];
             /** Can Checkout */
@@ -2813,16 +2917,21 @@ export interface components {
             /** Lines Count */
             lines_count: number;
             /**
-             * Subtotal
+             * Subtotals
              * @description Lines without issues only
-             * @example 8.95
              */
-            subtotal: string;
+            subtotals: components["schemas"]["CurrencyAmount"][];
+            /** Savings */
+            savings: components["schemas"]["CurrencyAmount"][];
             /**
-             * Savings
-             * @example 8.95
+             * Delivery Fees
+             * @default []
              */
-            savings: string;
+            delivery_fees: components["schemas"]["CurrencyAmount"][];
+            /** Totals */
+            totals: components["schemas"]["CurrencyAmount"][];
+            /** Selected Delivery Method Code */
+            selected_delivery_method_code?: string | null;
             /** Delivery Quotes */
             delivery_quotes: components["schemas"]["DeliveryQuote"][];
             /** Can Checkout */
@@ -2839,6 +2948,10 @@ export interface components {
         CartPreview: {
             /** Items */
             items: components["schemas"]["CartPreviewItem"][];
+            /** Governorate */
+            governorate?: string | null;
+            /** Delivery Method Code */
+            delivery_method_code?: string | null;
         };
         /** CartPreviewItem */
         CartPreviewItem: {
@@ -2856,14 +2969,15 @@ export interface components {
             product: components["schemas"]["CartProduct"];
             variant: components["schemas"]["CartVariant"] | null;
             image: components["schemas"]["ImageUrls"] | null;
+            currency: components["schemas"]["Currency"];
             /**
              * Unit Price
-             * @example 8.95
+             * @example 15000.00
              */
             unit_price: string;
             /**
              * Regular Price
-             * @example 8.95
+             * @example 15000.00
              */
             regular_price: string;
             /** Compare At Price */
@@ -2873,7 +2987,7 @@ export interface components {
             /**
              * Line Total
              * @description unit_price x quantity; 0 for lines with an issue
-             * @example 8.95
+             * @example 15000.00
              */
             line_total: string;
             stock_status: components["schemas"]["StockStatus"];
@@ -2906,16 +3020,21 @@ export interface components {
             /** Lines Count */
             lines_count: number;
             /**
-             * Subtotal
+             * Subtotals
              * @description Lines without issues only
-             * @example 8.95
              */
-            subtotal: string;
+            subtotals: components["schemas"]["CurrencyAmount"][];
+            /** Savings */
+            savings: components["schemas"]["CurrencyAmount"][];
             /**
-             * Savings
-             * @example 8.95
+             * Delivery Fees
+             * @default []
              */
-            savings: string;
+            delivery_fees: components["schemas"]["CurrencyAmount"][];
+            /** Totals */
+            totals: components["schemas"]["CurrencyAmount"][];
+            /** Selected Delivery Method Code */
+            selected_delivery_method_code?: string | null;
             /** Delivery Quotes */
             delivery_quotes: components["schemas"]["DeliveryQuote"][];
             /** Can Checkout */
@@ -3042,12 +3161,41 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /**
+         * Currency
+         * @description Currencies accepted for new catalog, delivery and order data.
+         * @enum {string}
+         */
+        Currency: "SYP" | "USD";
+        /** CurrencyAmount */
+        CurrencyAmount: {
+            currency: components["schemas"]["Currency"];
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+        };
+        /** CurrencyStat */
+        CurrencyStat: {
+            /** Currency */
+            currency: string;
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+        };
         /** DeliveryOut */
         DeliveryOut: {
             /** Code */
             code: string;
             /** Name */
             name: string;
+            /** Currency */
+            currency: string;
+            /** Fee Paid To Carrier */
+            fee_paid_to_carrier: boolean;
         };
         /** DeliveryQuote */
         DeliveryQuote: {
@@ -3057,9 +3205,10 @@ export interface components {
             name: string;
             /** Description */
             description: string | null;
+            currency: components["schemas"]["Currency"];
             /**
              * Fee
-             * @example 8.95
+             * @example 15000.00
              */
             fee: string;
             /** Is Free */
@@ -3070,6 +3219,10 @@ export interface components {
             amount_to_free_shipping: string | null;
             /** Requires Address */
             requires_address: boolean;
+            /** Fee Paid To Carrier */
+            fee_paid_to_carrier: boolean;
+            /** Totals */
+            totals: components["schemas"]["CurrencyAmount"][];
         };
         /**
          * DevicePlatform
@@ -3100,7 +3253,8 @@ export interface components {
         FacetsOut: {
             /** Brands */
             brands: components["schemas"]["BrandFacet"][];
-            price: components["schemas"]["PriceRange"];
+            /** Prices */
+            prices: components["schemas"]["PriceRange"][];
             /**
              * Attributes
              * @default []
@@ -3169,6 +3323,13 @@ export interface components {
             email: string | null;
             /** Name */
             name: string | null;
+        };
+        /** GovernorateOut */
+        GovernorateOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -3412,11 +3573,10 @@ export interface components {
             customer_notes?: string | null;
             /** Gift Message */
             gift_message?: string | null;
-            /**
-             * Expected Total
-             * @description The total shown on the checkout screen
-             */
-            expected_total: number | string;
+            /** Expected Totals */
+            expected_totals: {
+                [key: string]: number | string;
+            };
         };
         /** OrderCustomer */
         OrderCustomer: {
@@ -3454,26 +3614,8 @@ export interface components {
             gift_message: string | null;
             /** Items */
             items: components["schemas"]["OrderItemOut"][];
-            /**
-             * Subtotal
-             * @example 8.95
-             */
-            subtotal: string;
-            /**
-             * Discount
-             * @example 8.95
-             */
-            discount: string;
-            /**
-             * Shipping Fee
-             * @example 8.95
-             */
-            shipping_fee: string;
-            /**
-             * Total
-             * @example 8.95
-             */
-            total: string;
+            /** Totals */
+            totals: components["schemas"]["OrderTotalOut"][];
             /** Timeline */
             timeline: components["schemas"]["TimelineStepOut"][];
             /** Cancel Reason */
@@ -3499,16 +3641,18 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             image: components["schemas"]["ImageUrls"] | null;
+            /** Currency */
+            currency: string;
             /**
              * Unit Price
-             * @example 8.95
+             * @example 15000.00
              */
             unit_price: string;
             /** Quantity */
             quantity: number;
             /**
              * Line Total
-             * @example 8.95
+             * @example 15000.00
              */
             line_total: string;
             /** Bundle Contents */
@@ -3533,16 +3677,10 @@ export interface components {
             counts: {
                 [key: string]: number;
             };
-            /**
-             * Delivered Revenue
-             * @example 8.95
-             */
-            delivered_revenue: string;
-            /**
-             * Average Order Value
-             * @example 8.95
-             */
-            average_order_value: string;
+            /** Delivered Revenue */
+            delivered_revenue: components["schemas"]["CurrencyStat"][];
+            /** Average Order Value */
+            average_order_value: components["schemas"]["CurrencyStat"][];
             /** Cancelled Rate */
             cancelled_rate: number;
             /** Top Products */
@@ -3553,6 +3691,11 @@ export interface components {
          * @enum {string}
          */
         OrderStatus: "pending" | "preparing" | "shipped" | "ready_for_pickup" | "delivered" | "cancelled";
+        /**
+         * OrderStatusGroup
+         * @enum {string}
+         */
+        OrderStatusGroup: "active" | "completed" | "cancelled";
         /** OrderSummaryOut */
         OrderSummaryOut: {
             /**
@@ -3570,15 +3713,39 @@ export interface components {
             status_label: string;
             /** Items Count */
             items_count: number;
-            /**
-             * Total
-             * @example 8.95
-             */
-            total: string;
+            /** Totals */
+            totals: components["schemas"]["OrderTotalOut"][];
             /** @description First item's image */
             image: components["schemas"]["ImageUrls"] | null;
             /** Delivery Method Name */
             delivery_method_name: string;
+        };
+        /** OrderTotalOut */
+        OrderTotalOut: {
+            /** Currency */
+            currency: string;
+            /**
+             * Subtotal
+             * @example 15000.00
+             */
+            subtotal: string;
+            /**
+             * Discount
+             * @example 15000.00
+             */
+            discount: string;
+            /**
+             * Shipping Fee
+             * @example 15000.00
+             */
+            shipping_fee: string;
+            /**
+             * Total
+             * @example 15000.00
+             */
+            total: string;
+            /** Is Legacy */
+            is_legacy: boolean;
         };
         /** Page[AdminBrandOut] */
         Page_AdminBrandOut_: {
@@ -3718,6 +3885,7 @@ export interface components {
         };
         /** PriceRange */
         PriceRange: {
+            currency: components["schemas"]["Currency"];
             /** Min */
             min: string | null;
             /** Max */
@@ -3732,6 +3900,7 @@ export interface components {
             /** Name */
             name: string;
             type: components["schemas"]["ProductType"];
+            currency: components["schemas"]["Currency"];
             brand: components["schemas"]["BrandRef"] | null;
             category: components["schemas"]["CategoryRef"];
             /** @description Main image (lowest sort_order) */
@@ -3739,7 +3908,7 @@ export interface components {
             /**
              * Price
              * @description Lowest current price (sale price when on sale)
-             * @example 8.95
+             * @example 15000.00
              */
             price: string;
             /**
@@ -3767,6 +3936,8 @@ export interface components {
         /** ProductCreate */
         ProductCreate: {
             type: components["schemas"]["ProductType"];
+            /** @default SYP */
+            currency: components["schemas"]["Currency"];
             /** Name */
             name: string;
             /** Slug */
@@ -3814,6 +3985,7 @@ export interface components {
             /** Name */
             name: string;
             type: components["schemas"]["ProductType"];
+            currency: components["schemas"]["Currency"];
             brand: components["schemas"]["BrandRef"] | null;
             category: components["schemas"]["CategoryRef"];
             /** @description Main image (lowest sort_order) */
@@ -3821,7 +3993,7 @@ export interface components {
             /**
              * Price
              * @description Lowest current price (sale price when on sale)
-             * @example 8.95
+             * @example 15000.00
              */
             price: string;
             /**
@@ -3914,6 +4086,7 @@ export interface components {
          */
         ProductUpdate: {
             type?: components["schemas"]["ProductType"] | null;
+            currency?: components["schemas"]["Currency"] | null;
             /** Name */
             name?: string | null;
             /** Slug */
@@ -4233,20 +4406,21 @@ export interface components {
         VariantOut: {
             /** Id */
             id: number;
+            currency: components["schemas"]["Currency"];
             /** Options */
             options: {
                 [key: string]: string;
             };
             /**
              * Price
-             * @example 8.95
+             * @example 15000.00
              */
             price: string;
             /** Sale Price */
             sale_price: string | null;
             /**
              * Current Price
-             * @example 8.95
+             * @example 15000.00
              */
             current_price: string;
             /** Discount Percent */
@@ -4969,6 +5143,26 @@ export interface operations {
             };
         };
     };
+    list_governorates_api_v1_governorates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernorateOut"][];
+                };
+            };
+        };
+    };
     list_brands_api_v1_brands_get: {
         parameters: {
             query?: {
@@ -5048,6 +5242,8 @@ export interface operations {
                 /** @description On the shown price */
                 min_price?: number | string | null;
                 max_price?: number | string | null;
+                /** @description Currency for min_price/max_price */
+                price_currency?: components["schemas"]["Currency"];
                 in_stock?: boolean;
                 on_sale?: boolean;
                 is_new?: boolean;
@@ -5092,6 +5288,8 @@ export interface operations {
                 /** @description On the shown price */
                 min_price?: number | string | null;
                 max_price?: number | string | null;
+                /** @description Currency for min_price/max_price */
+                price_currency?: components["schemas"]["Currency"];
                 in_stock?: boolean;
                 on_sale?: boolean;
                 is_new?: boolean;
@@ -5188,7 +5386,10 @@ export interface operations {
     };
     get_cart_api_v1_cart_get: {
         parameters: {
-            query?: never;
+            query?: {
+                governorate?: string | null;
+                delivery_method_code?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -5202,6 +5403,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CartOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -5613,6 +5823,7 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["OrderStatus"] | null;
+                status_group?: components["schemas"]["OrderStatusGroup"] | null;
                 page?: number;
                 page_size?: number;
             };
@@ -7892,6 +8103,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_delivery_methods_api_v1_admin_delivery_methods_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDeliveryMethodOut"][];
+                };
+            };
+        };
+    };
+    update_delivery_method_api_v1_admin_delivery_methods__method_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                method_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminDeliveryMethodUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDeliveryMethodOut"];
                 };
             };
             /** @description Validation Error */

@@ -101,29 +101,14 @@ export function productJsonLd(product: ProductDetail): JsonLd {
       ? [product.image.large]
       : [];
   let offers: JsonLd;
-  if (product.type === "variable" && product.variants.length > 0) {
-    const prices = product.variants.map((v) => Number(v.current_price));
-    const available = product.variants.some((v) => v.stock_status !== "out");
-    offers = {
-      "@type": "AggregateOffer",
-      priceCurrency: "EUR",
-      lowPrice: Math.min(...prices).toFixed(2),
-      highPrice: Math.max(...prices).toFixed(2),
-      offerCount: product.variants.length,
-      availability: available ? AVAILABILITY.in_stock : AVAILABILITY.out,
-      url,
-    };
-  } else {
-    const status =
-      product.stock_status ?? (product.in_stock ? "in_stock" : "out");
-    offers = {
-      "@type": "Offer",
-      priceCurrency: "EUR",
-      price: product.current_price ?? product.price,
-      availability: AVAILABILITY[status],
-      url,
-    };
-  }
+  const status = product.stock_status ?? (product.in_stock ? "in_stock" : "out");
+  offers = {
+    "@type": "Offer",
+    priceCurrency: product.currency,
+    price: product.current_price ?? product.price,
+    availability: AVAILABILITY[status],
+    url,
+  };
   return {
     "@context": "https://schema.org",
     "@type": "Product",

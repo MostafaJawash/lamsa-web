@@ -10,8 +10,8 @@ import {
 } from "@/features/auth/schemas";
 
 describe("phone", () => {
-  it("combines the country code with the national number without its trunk 0", () => {
-    expect(combinePhone("+49", "0151 2345 6789")).toBe("+4915123456789");
+  it("removes a trunk zero only for Syrian national numbers", () => {
+    expect(combinePhone("+49", "0151 2345 6789")).toBe("+49015123456789");
     expect(combinePhone("+49", "151-2345-6789")).toBe("+4915123456789");
     expect(combinePhone("+963", "0933 123 456")).toBe("+963933123456");
   });
@@ -42,7 +42,7 @@ describe("phone", () => {
 });
 
 describe("password rules (mirror the backend)", () => {
-  const forms = phoneForms("+49", "0151 23456789");
+  const forms = phoneForms("+963", "0933 123456");
 
   it("8–128 characters", () => {
     expect(passwordRules("Abcdef1").length).toBe(false);
@@ -58,10 +58,10 @@ describe("password rules (mirror the backend)", () => {
 
   it("not the phone in any spelling", () => {
     for (const spelling of [
-      "+4915123456789",
-      "015123456789",
-      "0049 151 23456789",
-      "15123456789",
+      "+963933123456",
+      "0933123456",
+      "00963 933 123456",
+      "933123456",
     ])
       expect(passwordRules(spelling, forms).notPhone, spelling).toBe(false);
     expect(passwordRules("Secret-pass1", forms).notPhone).toBe(true);
@@ -70,9 +70,9 @@ describe("password rules (mirror the backend)", () => {
   it("register rejects the phone as password", () => {
     const result = registerSchema.safeParse({
       name: "e2e",
-      countryCode: "+49",
-      phone: "0151 23456789",
-      password: "+49015123456789",
+      countryCode: "+963",
+      phone: "0933 123456",
+      password: "+963933123456",
     });
     expect(result.success).toBe(false);
   });

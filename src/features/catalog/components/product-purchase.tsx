@@ -200,16 +200,16 @@ export function ProductPurchase({
         <div className="lm-p-price">
           {price.regular ? (
             <s>
-              <Amount value={price.regular} />
+              <Amount value={price.regular} currency={product.currency} />
             </s>
           ) : null}
           <b className={cn("lm-now", price.regular && "sale")}>
-            <Amount value={price.current} />
+            <Amount value={price.current} currency={product.currency} />
           </b>
           {price.savings ? (
             <i className="lm-bd off">
               {t("product.save", { amount: "" })}
-              <Amount value={price.savings} />
+              <Amount value={price.savings} currency={product.currency} />
             </i>
           ) : null}
         </div>
@@ -309,7 +309,7 @@ export function ProductPurchase({
                             }
                           >
                             <span className="lm-num" dir="ltr">
-                              {formatPrice(target.current_price)}
+                              {formatPrice(target.current_price, product.currency)}
                             </span>
                           </small>
                         ) : null}

@@ -35,9 +35,9 @@ const MAX_VALUE_LENGTH = 100;
 
 /** Price select presets (prototype: `now >= lo && now < hi`; backend bounds are inclusive). */
 export const PRICE_PRESETS = {
-  lt5: { min: null, max: "4.99" },
-  "5to15": { min: "5", max: "14.99" },
-  gt15: { min: "15", max: null },
+  lt5: { min: null, max: "4999" },
+  "5to15": { min: "5000", max: "14999" },
+  gt15: { min: "15000", max: null },
 } as const;
 export type PricePreset = keyof typeof PRICE_PRESETS;
 
@@ -59,6 +59,8 @@ function validPair(name: string, value: string, scope: ListScope): boolean {
     case "min_price":
     case "max_price":
       return MONEY.test(value);
+    case "price_currency":
+      return value === "SYP" || value === "USD";
     case "on_sale":
       return value === "true";
     case "sort":

@@ -19,9 +19,9 @@ const PRESET_LABEL = {
   gt15: "list.priceGt15",
 } as const;
 
-/** "8,95 €" without the bidi isolation (chips are plain text). */
-function money(amount: string): string {
-  return formatPrice(Number(amount).toFixed(2));
+/** Currency ranges are backend values; formatting never changes their value. */
+function money(amount: string, currency: "SYP" | "USD"): string {
+  return formatPrice(amount, currency);
 }
 
 /**
@@ -46,10 +46,10 @@ export function filterChips(
       preset && preset !== "custom"
         ? t(PRESET_LABEL[preset])
         : min && max
-          ? t("list.priceBetween", { min: money(min), max: money(max) })
+          ? t("list.priceBetween", { min: money(min, (value(filters, "price_currency") ?? "SYP") as "SYP" | "USD"), max: money(max, (value(filters, "price_currency") ?? "SYP") as "SYP" | "USD") })
           : min
-            ? t("list.priceFrom", { min: money(min) })
-            : t("list.priceTo", { max: money(max ?? "0") });
+            ? t("list.priceFrom", { min: money(min, (value(filters, "price_currency") ?? "SYP") as "SYP" | "USD") })
+            : t("list.priceTo", { max: money(max ?? "0", (value(filters, "price_currency") ?? "SYP") as "SYP" | "USD") });
     const remove: FilterPair[] = [];
     if (min) remove.push(["min_price", min]);
     if (max) remove.push(["max_price", max]);

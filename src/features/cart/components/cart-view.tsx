@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { t } from "@/i18n";
-import { addMoney, pluralize } from "@/lib/format";
+import { pluralize } from "@/lib/format";
 
 import {
   clearCart,
@@ -221,13 +221,6 @@ export function CartView({ initial }: { initial: AnyCart }) {
   }
 
   const quote = homeQuote(server);
-  const freeFrom = quote?.free_from ?? null;
-  const toFree = quote?.amount_to_free_shipping ?? null;
-  const progress =
-    freeFrom && Number(freeFrom) > 0
-      ? Math.min(100, (Number(server.subtotal) / Number(freeFrom)) * 100)
-      : 100;
-  const [beforeAmount, afterAmount] = t("cart.toFree").split("{amount}");
 
   return (
     <>
@@ -291,6 +284,7 @@ export function CartView({ initial }: { initial: AnyCart }) {
                         <Price
                           price={line.unit_price}
                           compareAt={line.compare_at_price}
+                          currency={line.currency}
                         />
                       </span>
                     ) : null}
@@ -356,7 +350,11 @@ export function CartView({ initial }: { initial: AnyCart }) {
           <h2>{t("cart.summary")}</h2>
           <div className="lm-row">
             <span>{t("cart.subtotal")}</span>
-            <Amount value={server.subtotal} />
+            <span>
+              {server.subtotals.map((total) => (
+                <Amount key={total.currency} value={total.amount} currency={total.currency} />
+              ))}
+            </span>
           </div>
           {quote ? (
             <div className="lm-row">
@@ -364,35 +362,27 @@ export function CartView({ initial }: { initial: AnyCart }) {
               {quote.is_free ? (
                 <b className="free">{t("cart.free")}</b>
               ) : (
-                <Amount value={quote.fee} />
+                <Amount value={quote.fee} currency={quote.currency} />
               )}
             </div>
           ) : null}
-          {freeFrom ? (
-            toFree ? (
-              <>
-                <div className="lm-freebar">
-                  <div style={{ width: `${progress}%` }} />
-                </div>
-                <p className="lm-hint">
-                  {beforeAmount}
-                  <Amount value={toFree} />
-                  {afterAmount}
-                </p>
-              </>
-            ) : (
-              <p className="lm-hint ok">{t("cart.freeReached")}</p>
-            )
-          ) : null}
-          {Number(server.savings) > 0 ? (
+          {server.savings.length > 0 ? (
             <div className="lm-row">
               <span>{t("cart.savings")}</span>
-              <Amount value={server.savings} />
+              <span>
+                {server.savings.map((saving) => (
+                  <Amount key={saving.currency} value={saving.amount} currency={saving.currency} />
+                ))}
+              </span>
             </div>
           ) : null}
           <div className="lm-row total">
             <span>{t("cart.total")}</span>
-            <Amount value={addMoney(server.subtotal, quote?.fee ?? "0.00")} />
+            <span>
+              {server.totals.map((total) => (
+                <Amount key={total.currency} value={total.amount} currency={total.currency} />
+              ))}
+            </span>
           </div>
           {server.can_checkout ? (
             <Link href="/checkout" className="lm-btn primary w-full">

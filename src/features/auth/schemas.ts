@@ -31,11 +31,12 @@ function isInternational(number: string): boolean {
 /**
  * The number sent to the backend: what the visitor typed when it is already
  * international (+49…, 0049…), otherwise the country code plus the national number
- * without its trunk "0" (all supported countries use 0).
+ * without its trunk "0" only for Syria (+963).
  */
 export function combinePhone(countryCode: string, number: string): string {
   if (isInternational(number)) return number.trim();
-  return `${countryCode}${digitsOf(number).replace(/^0/, "")}`;
+  const digits = digitsOf(number);
+  return `${countryCode}${countryCode === "+963" ? digits.replace(/^0+/, "") : digits}`;
 }
 
 /** Spellings of the phone a password must not equal (the backend's rule, approximated). */

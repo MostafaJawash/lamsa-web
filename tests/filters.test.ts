@@ -78,12 +78,12 @@ describe("parseFilters / serializeFilters (normalization)", () => {
   });
 
   it("maps the no-JS price select to min/max", () => {
-    expect(parse("price=lt5")).toEqual([["max_price", "4.99"]]);
+    expect(parse("price=lt5")).toEqual([["max_price", "4999"]]);
     expect(parse("price=5to15&min_price=1")).toEqual([
-      ["max_price", "14.99"],
-      ["min_price", "5"],
+      ["max_price", "14999"],
+      ["min_price", "5000"],
     ]);
-    expect(parse("price=gt15")).toEqual([["min_price", "15"]]);
+    expect(parse("price=gt15")).toEqual([["min_price", "15000"]]);
     expect(parse("price=nonsense&min_price=2")).toEqual([["min_price", "2"]]);
   });
 
@@ -167,9 +167,9 @@ describe("filter changes", () => {
 
 describe("price ranges", () => {
   it("recognizes presets and custom ranges", () => {
-    expect(pricePreset(parse("max_price=4.99"))).toBe("lt5");
-    expect(pricePreset(parse("min_price=5&max_price=14.99"))).toBe("5to15");
-    expect(pricePreset(parse("min_price=15"))).toBe("gt15");
+    expect(pricePreset(parse("max_price=4999"))).toBe("lt5");
+    expect(pricePreset(parse("min_price=5000&max_price=14999"))).toBe("5to15");
+    expect(pricePreset(parse("min_price=15000"))).toBe("gt15");
     expect(pricePreset(parse("min_price=3&max_price=9"))).toBe("custom");
     expect(pricePreset(parse("brand=a"))).toBeNull();
   });
@@ -178,10 +178,10 @@ describe("price ranges", () => {
     expect(withPricePreset(parse("min_price=1&brand=a"), "gt15", CARE)).toEqual(
       [
         ["brand", "a"],
-        ["min_price", "15"],
+        ["min_price", "15000"],
       ],
     );
-    expect(withPricePreset(parse("max_price=4.99"), null, CARE)).toEqual([]);
+    expect(withPricePreset(parse("max_price=4999"), null, CARE)).toEqual([]);
   });
 });
 
