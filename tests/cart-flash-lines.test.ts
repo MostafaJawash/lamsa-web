@@ -13,7 +13,6 @@ import {
   cartErrorText,
   guestFixes,
   guestLineError,
-  homeQuote,
   issueText,
   lineKey,
   lineRef,
@@ -105,6 +104,10 @@ describe("flash cookie", () => {
       { kind: "favAdded" },
       { kind: "favRemoved" },
       { kind: "moved" },
+      { kind: "addressSaved" },
+      { kind: "addressDeleted" },
+      { kind: "addressDefault" },
+      { kind: "orderCancelled" },
       { kind: "error", code: "INSUFFICIENT_STOCK", n: 2 },
       { kind: "error", code: "OUT_OF_STOCK", n: null },
     ] as const;
@@ -113,6 +116,16 @@ describe("flash cookie", () => {
       expect(value).toMatch(/^v1\.abc12345\./);
       expect(decodeFlash(value)).toEqual({ id: "abc12345", flash });
     }
+  });
+
+  it("has a toast for the address and order kinds", () => {
+    for (const kind of [
+      "addressSaved",
+      "addressDeleted",
+      "addressDefault",
+      "orderCancelled",
+    ] as const)
+      expect(flashToast({ kind })?.text, kind).toMatch(/[؀-ۿ]/);
   });
 
   it("rejects anything else", () => {
@@ -248,13 +261,12 @@ describe("cart errors and issues", () => {
     ]);
   });
 
-  it("names lines and reads the home quote", () => {
+  it("names lines and reads issue texts", () => {
     const cart = preview([line(5, 9, 1)]);
     const first = cart.lines[0]!;
     expect(lineKey(first)).toBe("5:9");
     expect(lineRef(first)).toBe("5:9");
     expect(lineRef({ ...first, id: 42 } as never)).toBe("42");
-    expect(homeQuote(cart)?.code).toBe("home");
     expect(issueText(issue("INSUFFICIENT_STOCK", { available: 3 }))).toBe(
       "لم يتبقَّ سوى 3",
     );

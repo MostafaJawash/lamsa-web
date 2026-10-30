@@ -16,7 +16,7 @@ import {
 import { BackendImage } from "@/components/shared/backend-image";
 import { EmptyState } from "@/components/shared/empty-state";
 import { BagIcon, XIcon } from "@/components/shared/icons";
-import { Amount, Price } from "@/components/shared/price";
+import { Amounts, Price } from "@/components/shared/price";
 import { ProductSilhouette } from "@/components/shared/product-art";
 import {
   Dialog,
@@ -36,13 +36,7 @@ import {
   updateLine,
 } from "../actions";
 import { badgeStore } from "../badge-store";
-import {
-  cartErrorText,
-  homeQuote,
-  issueText,
-  lineKey,
-  lineRef,
-} from "../lines";
+import { cartErrorText, issueText, lineKey, lineRef } from "../lines";
 import { showToast } from "../toast";
 import type { AnyCart, AnyCartLine, CartActionResult } from "../types";
 
@@ -220,8 +214,6 @@ export function CartView({ initial }: { initial: AnyCart }) {
     );
   }
 
-  const quote = homeQuote(server);
-
   return (
     <>
       <div className="lm-list-head">
@@ -350,39 +342,21 @@ export function CartView({ initial }: { initial: AnyCart }) {
           <h2>{t("cart.summary")}</h2>
           <div className="lm-row">
             <span>{t("cart.subtotal")}</span>
-            <span>
-              {server.subtotals.map((total) => (
-                <Amount key={total.currency} value={total.amount} currency={total.currency} />
-              ))}
-            </span>
+            <Amounts items={server.subtotals} />
           </div>
-          {quote ? (
-            <div className="lm-row">
-              <span>{t("cart.homeShipping")}</span>
-              {quote.is_free ? (
-                <b className="free">{t("cart.free")}</b>
-              ) : (
-                <Amount value={quote.fee} currency={quote.currency} />
-              )}
-            </div>
-          ) : null}
+          <div className="lm-row">
+            <span>{t("cart.delivery")}</span>
+            <span className="lm-muted">{t("cart.deliveryNext")}</span>
+          </div>
           {server.savings.length > 0 ? (
             <div className="lm-row">
               <span>{t("cart.savings")}</span>
-              <span>
-                {server.savings.map((saving) => (
-                  <Amount key={saving.currency} value={saving.amount} currency={saving.currency} />
-                ))}
-              </span>
+              <Amounts items={server.savings} />
             </div>
           ) : null}
           <div className="lm-row total">
             <span>{t("cart.total")}</span>
-            <span>
-              {server.totals.map((total) => (
-                <Amount key={total.currency} value={total.amount} currency={total.currency} />
-              ))}
-            </span>
+            <Amounts items={server.totals} />
           </div>
           {server.can_checkout ? (
             <Link href="/checkout" className="lm-btn primary w-full">

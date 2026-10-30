@@ -21,6 +21,10 @@ export type Flash =
   | { kind: "favAdded" }
   | { kind: "favRemoved" }
   | { kind: "moved" }
+  | { kind: "addressSaved" }
+  | { kind: "addressDeleted" }
+  | { kind: "addressDefault" }
+  | { kind: "orderCancelled" }
   | { kind: "error"; code: string; n: number | null };
 
 export type FlashToast = {
@@ -29,7 +33,16 @@ export type FlashToast = {
   action?: { label: string; href: Route };
 };
 
-const SIMPLE = ["cartAdded", "favAdded", "favRemoved", "moved"] as const;
+const SIMPLE = [
+  "cartAdded",
+  "favAdded",
+  "favRemoved",
+  "moved",
+  "addressSaved",
+  "addressDeleted",
+  "addressDefault",
+  "orderCancelled",
+] as const;
 const CODE = /^[A-Z][A-Z_]{1,40}$/;
 const ID = /^[a-z0-9]{6,16}$/;
 
@@ -112,6 +125,14 @@ export function flashToast(flash: Flash): FlashToast | null {
         text: t("toast.moved"),
         action: { label: t("toast.movedAction"), href: "/cart" },
       };
+    case "addressSaved":
+      return { text: t("toast.addressSaved") };
+    case "addressDeleted":
+      return { text: t("toast.addressDeleted") };
+    case "addressDefault":
+      return { text: t("toast.addressDefault") };
+    case "orderCancelled":
+      return { text: t("toast.orderCancelled") };
     case "error":
       return {
         text: cartErrorText(

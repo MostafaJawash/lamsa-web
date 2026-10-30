@@ -114,7 +114,7 @@ test.describe("list filters (desktop)", () => {
   test("an empty filter result offers to clear the filters", async ({
     page,
   }) => {
-    await page.goto("/c/care?min_price=500");
+    await page.goto("/c/care?min_price=999999");
     await expect(
       page.getByText("لا توجد منتجات تطابق هذه الفلاتر"),
     ).toBeVisible();
@@ -197,7 +197,7 @@ test.describe("product page", () => {
     page,
   }) => {
     await page.goto("/p/demo-velvet-lipstick");
-    const main = page.locator(".lm-g-main img");
+    const main = page.locator(".lm-g-main img:visible");
     const before = await main.getAttribute("src");
 
     await page.getByRole("radio", { name: "أحمر كلاسيكي" }).click();
@@ -241,7 +241,7 @@ test.describe("product page", () => {
   test("size variants show their price", async ({ page }) => {
     await page.goto("/p/demo-jasmine-night-perfume");
     await page.getByRole("radio", { name: /50 ml/ }).click();
-    await expect(page.locator(".lm-p-price .lm-now")).toHaveText("27,95 €");
+    await expect(page.locator(".lm-p-price .lm-now")).toHaveText("27.95 $");
   });
 
   test("the related rail lists products of the same category", async ({

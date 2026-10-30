@@ -31,7 +31,11 @@ export class BackendError extends Error {
 export async function call<T>(
   method: string,
   path: string,
-  { token, body }: { token?: string; body?: unknown } = {},
+  {
+    token,
+    body,
+    headers,
+  }: { token?: string; body?: unknown; headers?: Record<string, string> } = {},
 ): Promise<T> {
   const response = await fetch(`${API}${path}`, {
     method,
@@ -39,6 +43,7 @@ export async function call<T>(
       Accept: "application/json",
       ...(body === undefined ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -52,10 +57,14 @@ export async function call<T>(
   return json as T;
 }
 
-/** A valid, unused German mobile number: national (as typed with +49) and E.164. */
+/**
+ * A valid, unused Syrian mobile number: national (as typed with the form's default
+ * country code, +963) and E.164.
+ */
 export function uniquePhone(): { national: string; e164: string } {
-  const rest = String(randomInt(10_000_000, 99_999_999));
-  return { national: `151${rest}`, e164: `+49151${rest}` };
+  const rest = String(randomInt(1_000_000, 9_999_999));
+  const national = `93${rest}`;
+  return { national, e164: `+963${national}` };
 }
 
 /** A per-test visitor IP (TEST-NET-2), sent as X-Real-IP so login limits don't collide. */

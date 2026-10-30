@@ -1,6 +1,7 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
 import {
+  call,
   deleteGoogleAccount,
   deletePhoneAccount,
   PASSWORD,
@@ -12,6 +13,7 @@ export class Accounts {
   private readonly phones = new Map<string, Set<string>>();
   private readonly tokens = new Map<string, string>();
   private readonly googleSubs = new Set<string>();
+  private readonly orderIds = new Set<number>();
 
   /** `passwords`: every password the account may have by the end (tries each). */
   phone(e164: string, ...passwords: string[]) {
@@ -30,10 +32,35 @@ export class Accounts {
     this.googleSubs.add(sub);
   }
 
+  /** An order the test made: cancelled by the store at the end, so its stock comes back. */
+  order(id: number) {
+    this.orderIds.add(id);
+  }
+
   async cleanup() {
+    await this.cancelOrders();
     for (const [phone, passwords] of this.phones)
       await deletePhoneAccount(phone, [...passwords], this.tokens.get(phone));
     for (const sub of this.googleSubs) await deleteGoogleAccount(sub);
+  }
+
+  private async cancelOrders() {
+    if (this.orderIds.size === 0) return;
+    const phone = process.env.E2E_ADMIN_PHONE;
+    const password = process.env.E2E_ADMIN_PASSWORD;
+    if (!phone || !password) return;
+    const { loginViaApi } = await import("./backend");
+    const admin = await loginViaApi(phone, password);
+    for (const id of this.orderIds) {
+      try {
+        await call("POST", `/admin/orders/${id}/cancel`, {
+          token: admin.access_token,
+          body: { reason: "e2e cleanup", restore_stock: true },
+        });
+      } catch {
+        // Already cancelled, or delivered: nothing to give back.
+      }
+    }
   }
 }
 

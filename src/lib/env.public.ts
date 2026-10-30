@@ -15,7 +15,17 @@ export type PublicEnv = {
   NEXT_PUBLIC_SUPPORT_PHONE: string;
   /** WhatsApp number, digits with country code (e.g. 4915112345678); optional. */
   NEXT_PUBLIC_SUPPORT_WHATSAPP: string;
+  /** Map tile URL template of the address map (`{z}/{x}/{y}`, optional `{s}`); empty: OpenStreetMap. */
+  NEXT_PUBLIC_MAP_TILE_URL: string;
+  /** HTML attribution shown on the map; empty: the OpenStreetMap credit (required by its tile policy). */
+  NEXT_PUBLIC_MAP_ATTRIBUTION: string;
 };
+
+/** OpenStreetMap's standard tile layer and the credit its usage policy requires. */
+export const DEFAULT_MAP_TILE_URL =
+  "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+export const DEFAULT_MAP_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>';
 
 export type EnvIssue = { name: string; message: string };
 
@@ -72,7 +82,25 @@ function parsePublicEnv(): PublicEnv {
     NEXT_PUBLIC_SUPPORT_WHATSAPP: (
       process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? ""
     ).replace(/\D/g, ""),
+    NEXT_PUBLIC_MAP_TILE_URL: parseTileUrl(
+      process.env.NEXT_PUBLIC_MAP_TILE_URL,
+    ),
+    NEXT_PUBLIC_MAP_ATTRIBUTION:
+      (process.env.NEXT_PUBLIC_MAP_ATTRIBUTION ?? "").trim() ||
+      DEFAULT_MAP_ATTRIBUTION,
   };
+}
+
+/**
+ * The map tile template: an http(s) URL with `{z}`, `{x}` and `{y}`; anything else
+ * (empty, malformed) falls back to OpenStreetMap, so a typo never leaves a blank map.
+ */
+export function parseTileUrl(value: string | undefined): string {
+  const url = (value ?? "").trim();
+  if (!/^https?:\/\//.test(url)) return DEFAULT_MAP_TILE_URL;
+  return ["{z}", "{x}", "{y}"].every((part) => url.includes(part))
+    ? url
+    : DEFAULT_MAP_TILE_URL;
 }
 
 export const publicEnv: PublicEnv = parsePublicEnv();

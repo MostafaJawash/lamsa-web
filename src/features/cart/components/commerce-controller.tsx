@@ -12,38 +12,17 @@ import {
 import { t } from "@/i18n";
 
 import { badgeStore } from "../badge-store";
-import { decodeFlash, FLASH_COOKIE, flashToast } from "../flash";
+import { showPendingFlash } from "../flash-client";
 import { cartErrorText } from "../lines";
 import { showToast } from "../toast";
 
 const HEART = 'form[data-lm-form="fav"] button[data-product-id]';
-const SHOWN_KEY = "lamsa_flash_shown";
 
 function hearts(productId?: string): HTMLButtonElement[] {
   const selector = productId
     ? `form[data-lm-form="fav"] button[data-product-id="${CSS.escape(productId)}"]`
     : HEART;
   return [...document.querySelectorAll<HTMLButtonElement>(selector)];
-}
-
-function readFlashCookie(): string | null {
-  const match = document.cookie
-    .split("; ")
-    .find((part) => part.startsWith(`${FLASH_COOKIE}=`));
-  return match
-    ? decodeURIComponent(match.slice(FLASH_COOKIE.length + 1))
-    : null;
-}
-
-function alreadyShown(id: string): boolean {
-  try {
-    const shown = sessionStorage.getItem(SHOWN_KEY)?.split(",") ?? [];
-    if (shown.includes(id)) return true;
-    sessionStorage.setItem(SHOWN_KEY, [...shown.slice(-9), id].join(","));
-  } catch {
-    // Storage blocked: show it (at worst twice).
-  }
-  return false;
 }
 
 /**
@@ -94,13 +73,7 @@ export function CommerceController({ flash }: { flash: string | null }) {
 
   // Flash toast (cookie set by a server action before a redirect, or handed over by the proxy).
   useEffect(() => {
-    const raw = readFlashCookie() ?? flash;
-    if (!raw) return;
-    document.cookie = `${FLASH_COOKIE}=; Max-Age=0; path=/; SameSite=Lax`;
-    const decoded = decodeFlash(raw);
-    if (!decoded || alreadyShown(decoded.id)) return;
-    const view = flashToast(decoded.flash);
-    if (view) showToast(view, (href) => router.push(href));
+    showPendingFlash(flash, (href) => router.push(href));
   }, [pathname, flash, router]);
 
   // Form submits: hearts, "move to cart", remove from favorites.

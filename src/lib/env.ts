@@ -10,12 +10,6 @@ import { formatEnvError, publicEnv, type PublicEnv } from "./env.public";
  */
 const serverSchema = z.object({
   API_BASE_URL: z.url().transform((url) => url.replace(/\/+$/, "")),
-  CHECKOUT_SIGNING_SECRET: z
-    .string()
-    .refine(
-      (value) => new TextEncoder().encode(value).length >= 32,
-      "must be at least 32 bytes",
-    ),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
@@ -35,7 +29,6 @@ export type ServerEnv = z.infer<typeof serverSchema> & PublicEnv;
 function parseServerEnv(): ServerEnv {
   const result = serverSchema.safeParse({
     API_BASE_URL: process.env.API_BASE_URL,
-    CHECKOUT_SIGNING_SECRET: process.env.CHECKOUT_SIGNING_SECRET,
     NODE_ENV: process.env.NODE_ENV,
     WEB_TRUST_PROXY_HEADERS: process.env.WEB_TRUST_PROXY_HEADERS || undefined,
   });

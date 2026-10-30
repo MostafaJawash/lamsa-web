@@ -9,4 +9,6 @@ import type { Schema } from "@/lib/api/types";
 
 export type Address = Schema<"AddressOut">;
 export type AddressCreate = Schema<"AddressCreate">;
+export type AddressUpdate = Schema<"AddressUpdate">;
+export type Governorate = Schema<"GovernorateOut">;
 export type NotificationPreferences = Schema<"PreferencesOut">;

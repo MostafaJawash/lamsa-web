@@ -9,3 +9,4 @@ blob-report/
 src/lib/api/schema.d.ts
 package-lock.json
 next-env.d.ts
+public/vendor

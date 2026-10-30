@@ -142,6 +142,16 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
+/** Not in the prototype set: a map pin in the same style (address cards). */
+export function PinIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11z" />
+      <circle cx="12" cy="10" r="2.4" />
+    </Svg>
+  );
+}
+
 /** Not in the prototype set: drawn in the same style for the password toggle. */
 export function EyeIcon(props: IconProps) {
   return (

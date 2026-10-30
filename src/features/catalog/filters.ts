@@ -110,9 +110,15 @@ function normalize(
       return [name, value] as const;
     }),
   ];
-  // page=1 is the default.
+  // page=1 is the default; a price currency only qualifies a price range, so without
+  // min/max it is no filter (the filter form always sends it) and one URL stays one result.
+  const hasPriceRange = out.some(
+    ([name]) => name === "min_price" || name === "max_price",
+  );
   const filtered = out.filter(
-    ([name, value]) => !(name === "page" && value === "1"),
+    ([name, value]) =>
+      !(name === "page" && value === "1") &&
+      !(name === "price_currency" && !hasPriceRange),
   );
   filtered.sort((a, b) => (a[0] === b[0] ? cmp(a[1], b[1]) : cmp(a[0], b[0])));
   return filtered;

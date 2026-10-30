@@ -10,7 +10,7 @@ import { cookieValue, expect, fillLogin, test } from "./support/fixtures";
 import {
   addFromProductPage,
   cookieNames,
-  euro,
+  price,
   GUEST_CART,
   GUEST_FAVORITES,
   previewOf,
@@ -90,14 +90,18 @@ test.describe("guest cart", () => {
     await expect(lines(page)).toHaveCount(1);
     await expect(lines(page).first()).toContainText(shampoo.name);
     const one = await previewOf([{ product_id: shampoo.id, quantity: 1 }]);
-    await expect(summary(page)).toContainText(euro(one.subtotal));
+    await expect(summary(page)).toContainText(
+      price(one.subtotals[0]!.amount, "SYP"),
+    );
 
     const plus = lines(page).first().getByRole("button", { name: "المزيد" });
     await plus.click();
     await plus.click();
     await expect(lines(page).first().locator(".lm-qty span")).toHaveText("3");
     const three = await previewOf([{ product_id: shampoo.id, quantity: 3 }]);
-    await expect(summary(page)).toContainText(euro(three.subtotal));
+    await expect(summary(page)).toContainText(
+      price(three.subtotals[0]!.amount, "SYP"),
+    );
     await expect(desktopBadge(page, "السلة")).toHaveText("3");
 
     await lines(page).first().getByRole("button", { name: /^احذف/ }).click();
@@ -141,14 +145,13 @@ test.describe("guest cart", () => {
     await expect(lines(page).first().locator(".lm-qty span")).toHaveText("4");
   });
 
-  test("the summary has the free-shipping bar and the savings row", async ({
+  test("the summary shows the savings row and leaves the delivery to checkout", async ({
     page,
   }) => {
     await addFromProductPage(page, SERUM);
     await page.goto("/cart");
-    await expect(summary(page).locator(".lm-freebar")).toBeVisible();
-    await expect(summary(page)).toContainText("للحصول على التوصيل المجاني");
     await expect(summary(page)).toContainText("وفّرت");
+    await expect(summary(page)).toContainText("يُحدَّد في الخطوة التالية");
     await expect(
       summary(page).getByRole("link", { name: "إتمام الطلب" }),
     ).toHaveAttribute("href", "/checkout");

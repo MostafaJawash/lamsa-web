@@ -25,6 +25,23 @@ export function formatPrice(amount: string, currency: DisplayCurrency): string {
   return `${sign}${grouped}${trimmedFraction ? `.${trimmedFraction}` : ""} $`;
 }
 
+/**
+ * Any backend currency code: SYP and USD as `formatPrice` prints them, EUR for orders
+ * placed before the Syria adaptation (their snapshots keep it), anything else as the
+ * amount followed by its code, so an old or unknown currency never breaks a page.
+ */
+export function formatAmount(amount: string, currency: string): string {
+  if (currency === "SYP" || currency === "USD")
+    return formatPrice(amount, currency);
+  const match = MONEY.exec(amount.trim());
+  if (!match || currency !== "EUR") return `${amount} ${currency}`.trim();
+  const [, sign = "", whole = "0", fraction = ""] = match;
+  const grouped = whole
+    .replace(/^0+(?=\d)/, "")
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${sign}${grouped}.${fraction.padEnd(2, "0")} €`;
+}
+
 const STORE_TIME_ZONE = "Asia/Damascus";
 
 const dateFormatters = {

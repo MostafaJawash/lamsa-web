@@ -9,7 +9,7 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+    value: "camera=(), microphone=(), geolocation=(self), payment=(), usb=()",
   },
   // TODO: add a Content-Security-Policy (nonce-based, see the Next.js CSP guide) once
   // the analytics origins are known. Google Identity Services (/login, /register) needs:

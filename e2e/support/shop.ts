@@ -155,21 +155,24 @@ export async function cookieNames(page: Page): Promise<string[]> {
   return (await page.context().cookies()).map((c) => c.name);
 }
 
-/** The guest cart as the backend sees it (prices, issues, totals). */
+/** The guest cart as the backend sees it (prices, issues, totals per currency). */
 export function previewOf(
   items: { product_id: number; variant_id?: number | null; quantity: number }[],
 ) {
   return call<{
-    subtotal: string;
+    subtotals: { currency: string; amount: string }[];
     items_count: number;
     lines: { key: string; quantity: number; issue: { code: string } | null }[];
   }>("POST", "/cart/preview", { body: { items } });
 }
 
-/** "8.95" → "8,95 €", as formatPrice() prints it. */
-export function euro(amount: string): string {
-  const [whole, fraction] = amount.split(".");
-  return `${Number(whole).toLocaleString("de-DE")},${fraction} €`;
+/** A money string as formatPrice() prints it: "15000.00" SYP → "15,000 ل.س", "19.95" USD → "19.95 $". */
+export function price(amount: string, currency: "SYP" | "USD"): string {
+  const [whole = "0", fraction = ""] = amount.split(".");
+  const grouped = Number(whole).toLocaleString("en-US");
+  if (currency === "SYP") return `${grouped} ل.س`;
+  const decimals = fraction.replace(/0+$/, "");
+  return `${grouped}${decimals ? `.${decimals}` : ""} $`;
 }
 
 /** Waits for the product page to hydrate (the add button is a client form). */

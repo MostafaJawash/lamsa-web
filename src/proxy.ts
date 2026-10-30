@@ -22,6 +22,8 @@ import {
   catalogRoute,
   createExistenceChecker,
 } from "@/features/catalog/existence";
+import { addressRoute } from "@/features/account/routes";
+import { orderRoute } from "@/features/orders/routes";
 import { createApiClient } from "@/lib/api/client";
 import { needsRefresh } from "@/lib/auth/jwt";
 import { safeNext, withNext } from "@/lib/auth/next-param";
@@ -79,6 +81,12 @@ import {
  *    (`Sec-Fetch-Dest: document`, or no such header: curl, bots); client navigations
  *    (RSC) are not checked, there the page's own `notFound()` shows the not-found UI.
  *    Next.js strips the RSC headers from `request` here, hence Sec-Fetch-Dest.
+ * 6. An order's own pages (`/account/orders/<id>`, `/checkout/success/<id>`), documents
+ *    only: an id that is not the signed-in customer's order (someone else's, missing, or
+ *    not a number) gets a real 404 (`GET /orders/{id}` with their token: 1.5 s, not
+ *    cached; backend down → passed through). The answer is the same for "not yours" and
+ *    "does not exist", so nothing leaks. The same for `/account/addresses?edit=<id>` and
+ *    `?delete=<id>` with an address that is not theirs.
  */
 const existence = createExistenceChecker({ apiBaseUrl: env.API_BASE_URL });
 
@@ -88,6 +96,7 @@ const NOT_FOUND_PATH = "/_lamsa/not-found";
 const VERIFY_TIMEOUT_MS = 1_500;
 
 const CATALOG_CHECK_HEADER = "x-lamsa-catalog-check";
+const ORDER_CHECK_HEADER = "x-lamsa-order-check";
 
 type SessionView = {
   accessToken: string | null;
@@ -223,6 +232,47 @@ async function syncGuestData(
   }
 }
 
+/** Is this the signed-in customer's order? ("unknown": backend down or slow). */
+async function orderOwnership(
+  id: number,
+  accessToken: string,
+  client: ClientContext,
+): Promise<"found" | "missing" | "unknown"> {
+  try {
+    const { response } = await createApiClient({ accessToken, client }).GET(
+      "/orders/{order_id}",
+      {
+        params: { path: { order_id: id } },
+        signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
+      },
+    );
+    if (response.ok) return "found";
+    return response.status === 404 ? "missing" : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+/** Is this one of the signed-in customer's addresses? */
+async function addressOwnership(
+  id: number,
+  accessToken: string,
+  client: ClientContext,
+): Promise<"found" | "missing" | "unknown"> {
+  try {
+    const { data, response } = await createApiClient({
+      accessToken,
+      client,
+    }).GET("/users/me/addresses", {
+      signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
+    });
+    if (!response.ok || !data) return "unknown";
+    return data.some((address) => address.id === id) ? "found" : "missing";
+  } catch {
+    return "unknown";
+  }
+}
+
 function isDocumentRequest(request: NextRequest): boolean {
   const dest = request.headers.get("sec-fetch-dest");
   return dest === null || dest === "document";
@@ -285,6 +335,26 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     if (verdict === "valid")
       return redirectTo(safeNext(searchParams.get("next")) as Route);
     if (verdict === "invalid") changes.apply(clearedSessionCookieSpecs());
+  }
+
+  const ownedPage = isDocumentRequest(request)
+    ? (orderRoute(pathname) ?? addressRoute(pathname, searchParams))
+    : null;
+  if (ownedPage && session.accessToken) {
+    const verdict =
+      ownedPage.action === "not-found"
+        ? "missing"
+        : pathname.startsWith("/account/addresses")
+          ? await addressOwnership(ownedPage.id, session.accessToken, client)
+          : await orderOwnership(ownedPage.id, session.accessToken, client);
+    if (verdict === "missing") {
+      const response = NextResponse.rewrite(
+        new URL(NOT_FOUND_PATH, request.url),
+        { ...forward(), status: 404 },
+      );
+      response.headers.set(ORDER_CHECK_HEADER, "missing");
+      return changes.writeTo(response);
+    }
   }
 
   const route = isDocumentRequest(request)

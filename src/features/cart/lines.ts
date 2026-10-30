@@ -6,7 +6,6 @@ import type {
   AnyCartLine,
   CartError,
   CartNotice,
-  DeliveryQuote,
   LineIssue,
 } from "./types";
 
@@ -33,15 +32,6 @@ export function issueText(issue: LineIssue): string {
 
 export function noticeText(notice: CartNotice): string {
   return tOptional(`cart.notices.${notice.code}`) ?? notice.message;
-}
-
-/** The "home" delivery quote (the summary's shipping row and free-shipping bar). */
-export function homeQuote(cart: AnyCart): DeliveryQuote | null {
-  return (
-    cart.delivery_quotes.find((q) => q.code === "home") ??
-    cart.delivery_quotes.find((q) => q.requires_address) ??
-    null
-  );
 }
 
 function detailNumber(details: unknown, key: string): number | null {

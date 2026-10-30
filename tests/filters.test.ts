@@ -185,6 +185,22 @@ describe("price ranges", () => {
   });
 });
 
+describe("price currency", () => {
+  it("is no filter by itself (the filter form always sends it)", () => {
+    const filters = parse("price_currency=SYP&on_sale=true");
+    expect(filters).toEqual([["on_sale", "true"]]);
+    expect(activeFilters(filters)).toHaveLength(1);
+  });
+
+  it("is kept next to a price range", () => {
+    const filters = parse("price_currency=USD&min_price=5");
+    expect(filters).toEqual([
+      ["min_price", "5"],
+      ["price_currency", "USD"],
+    ]);
+  });
+});
+
 describe("backend query", () => {
   it("adds the scope's fixed parameters and the page size, sorted", () => {
     expect(backendQuery(CARE, parse("brand=a&page=2"))).toBe(

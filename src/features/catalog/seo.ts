@@ -100,9 +100,8 @@ export function productJsonLd(product: ProductDetail): JsonLd {
     : product.image
       ? [product.image.large]
       : [];
-  let offers: JsonLd;
   const status = product.stock_status ?? (product.in_stock ? "in_stock" : "out");
-  offers = {
+  const offers: JsonLd = {
     "@type": "Offer",
     priceCurrency: product.currency,
     price: product.current_price ?? product.price,

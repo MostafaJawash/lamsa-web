@@ -7,8 +7,11 @@ const CAPTURE_PORT = 3199;
 const PHASE = process.env.E2E_PHASE ?? "all";
 
 const DEV_ONLY = /(backend-down|auth-dev|ip-forwarding)\.spec\.ts/;
-/** Changes stock and store settings: runs alone, after the parallel tests. */
-const STOCK = /stock\.spec\.ts/;
+/**
+ * Changes stock, product activation, delivery fees or store settings: runs alone, after
+ * the parallel tests.
+ */
+const STOCK = /(stock|checkout-global)\.spec\.ts/;
 
 /**
  * Projects:
