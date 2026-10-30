@@ -23,6 +23,14 @@ async function openList(page: Page, path: string) {
   await expect(page.locator("[data-list-preview]")).toHaveCount(0);
 }
 
+/** Opens a product page and waits until React has hydrated it (clicks and keys need that). */
+async function openProduct(page: Page, path: string) {
+  await page.goto(path);
+  await page.waitForFunction(
+    () => document.documentElement.dataset.hydrated === "1",
+  );
+}
+
 test.describe("list filters (desktop)", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -196,7 +204,7 @@ test.describe("product page", () => {
   test("variant switching updates price, availability, images, button and ?v", async ({
     page,
   }) => {
-    await page.goto("/p/demo-velvet-lipstick");
+    await openProduct(page, "/p/demo-velvet-lipstick");
     const main = page.locator(".lm-g-main img:visible");
     const before = await main.getAttribute("src");
 
@@ -239,21 +247,23 @@ test.describe("product page", () => {
   });
 
   test("size variants show their price", async ({ page }) => {
-    await page.goto("/p/demo-jasmine-night-perfume");
+    await openProduct(page, "/p/demo-jasmine-night-perfume");
     await page.getByRole("radio", { name: /50 ml/ }).click();
-    await expect(page.locator(".lm-p-price .lm-now")).toHaveText("27.95 $");
+    await expect(page.locator(".lm-p-price .lm-now:visible")).toHaveText(
+      "27.95 $",
+    );
   });
 
   test("the related rail lists products of the same category", async ({
     page,
   }) => {
-    await page.goto("/p/demo-velvet-lipstick");
+    await openProduct(page, "/p/demo-velvet-lipstick");
     const rail = page.getByRole("region", { name: "قد يعجبك أيضًا" });
     await expect(rail.locator(".lm-card").first()).toBeVisible();
   });
 
   test("tabs work with the keyboard", async ({ page }) => {
-    await page.goto("/p/demo-velvet-lipstick");
+    await openProduct(page, "/p/demo-velvet-lipstick");
     const desc = page.getByRole("tab", { name: "الوصف" });
     await desc.focus();
     await page.keyboard.press("ArrowLeft");
@@ -268,7 +278,7 @@ test.describe("product page", () => {
   test("bundle contents, related rail, JSON-LD and add to cart", async ({
     page,
   }) => {
-    await page.goto("/p/demo-care-box");
+    await openProduct(page, "/p/demo-care-box");
     const bundle = page.getByRole("region", { name: "محتويات علبة الهدايا" });
     await expect(bundle.locator("a.lm-mini")).toHaveCount(3);
     // The bundle's category has no other products, so no related rail here.
@@ -285,7 +295,7 @@ test.describe("product page", () => {
   });
 
   test("the product's category tab is active on desktop", async ({ page }) => {
-    await page.goto("/p/demo-velvet-lipstick");
+    await openProduct(page, "/p/demo-velvet-lipstick");
     const tab = page.locator('.lm-dnav a[href="/c/makeup"]');
     await expect(tab).toHaveCSS(
       "border-bottom-color",
@@ -430,7 +440,7 @@ test.describe("every page renders exactly one mobile header", () => {
     await expect(page.locator(".lm-mtitle")).toHaveText("عناية وعطور");
     await page.goto("/brands/demo-baity");
     await expect(page.locator(".lm-mtitle")).toHaveText("بيتي");
-    await page.goto("/p/demo-velvet-lipstick");
+    await openProduct(page, "/p/demo-velvet-lipstick");
     await expect(page.locator(".lm-mtitle")).toHaveText("أحمر شفاه مخملي");
   });
 

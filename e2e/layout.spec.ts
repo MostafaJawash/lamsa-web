@@ -39,20 +39,27 @@ for (const width of WIDTHS) {
           await expect(desktopNav).toBeHidden();
           await expect(page.locator(".lm-mhead")).toBeVisible();
 
-          // Scrolled to the very bottom, the last content must end above the tabbar.
-          await page.evaluate(() =>
-            window.scrollTo(0, document.documentElement.scrollHeight),
-          );
-          const contentBottom = await page.evaluate(() => {
-            const main = document.querySelector("main");
-            const items = main ? [...main.querySelectorAll("*")] : [];
-            return Math.max(
-              0,
-              ...items.map((el) => el.getBoundingClientRect().bottom),
-            );
-          });
-          const tabbarTop = (await tabbar.boundingBox())?.y ?? 0;
-          expect(contentBottom).toBeLessThanOrEqual(tabbarTop + 0.5);
+          // Scrolled to the very bottom, the last content must end above the tabbar. Polled:
+          // while a navigation settles, the kept-hidden previous page can briefly leave the
+          // tabbar without a box.
+          await expect
+            .poll(async () => {
+              await page.evaluate(() =>
+                window.scrollTo(0, document.documentElement.scrollHeight),
+              );
+              const tabbarTop = (await tabbar.boundingBox())?.y;
+              if (!tabbarTop) return Number.POSITIVE_INFINITY;
+              const contentBottom = await page.evaluate(() => {
+                const main = document.querySelector("main");
+                const items = main ? [...main.querySelectorAll("*")] : [];
+                return Math.max(
+                  0,
+                  ...items.map((el) => el.getBoundingClientRect().bottom),
+                );
+              });
+              return contentBottom - tabbarTop;
+            })
+            .toBeLessThanOrEqual(0.5);
         } else {
           await expect(tabbars.first()).toBeHidden();
           await expect(desktopNav).toBeVisible();

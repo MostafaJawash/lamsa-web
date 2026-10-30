@@ -42,6 +42,11 @@ export function CommerceController({ flash }: { flash: string | null }) {
   const favorites = useRef<Set<string> | null>(null);
   const pending = useRef(new Set<string>());
 
+  // A marker for tests (and anything else) that must wait until the page is interactive.
+  useEffect(() => {
+    document.documentElement.dataset.hydrated = "1";
+  }, []);
+
   // Favorite ids, once per page view; mark hearts now and whenever new ones appear.
   useEffect(() => {
     let cancelled = false;
