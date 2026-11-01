@@ -97,6 +97,7 @@
     "SAME_PASSWORD": "كلمة المرور الجديدة نفس الحالية.",
     "NOT_A_PASSWORD_ACCOUNT": "هذا الحساب مسجّل عبر Google ولا يملك كلمة مرور.",
     "CURRENT_PASSWORD_REQUIRED": "أدخل كلمة المرور الحالية للتأكيد.",
+    "CURRENT_PASSWORD_INCORRECT": "كلمة المرور الحالية غير صحيحة.",
     "ADDRESS_NOT_FOUND": "العنوان غير موجود.",
     "ADDRESS_LIMIT_REACHED": "وصلت إلى الحد الأقصى من العناوين (10).",
     "INVALID_LOCATION": "الموقع المحدد غير صالح أو خارج سوريا.",

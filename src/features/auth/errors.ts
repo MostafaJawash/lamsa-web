@@ -96,6 +96,12 @@ export function mapAuthError(
       return options.credentialsField
         ? failure({ fieldErrors: { [options.credentialsField]: message } })
         : failure({ formError: { kind: "generic", message } });
+    case "CURRENT_PASSWORD_INCORRECT":
+      return failure({
+        fieldErrors: {
+          [options.credentialsField ?? "currentPassword"]: message,
+        },
+      });
     case "ALREADY_REGISTERED":
       return failure({ formError: { kind: "alreadyRegistered", message } });
     case "TOO_MANY_ATTEMPTS":

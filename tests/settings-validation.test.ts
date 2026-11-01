@@ -212,6 +212,11 @@ describe("backend errors → fields", () => {
     expect(mapPasswordError(failure("INVALID_CREDENTIALS", null, 401))).toEqual(
       { currentPassword: msg },
     );
+    expect(
+      mapPasswordError(failure("CURRENT_PASSWORD_INCORRECT", null, 401)),
+    ).toEqual({
+      currentPassword: msg,
+    });
     expect(mapPasswordError(failure("NOT_A_PASSWORD_ACCOUNT"))).toEqual({
       form: msg,
     });
