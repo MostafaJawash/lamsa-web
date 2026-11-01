@@ -89,9 +89,19 @@ export function submitButton(page: Page) {
   return page.locator(".lm-auth button[type=submit].primary:visible");
 }
 
-/** Waits for hydration (the submit button is disabled until then). */
+/**
+ * Waits for hydration: the submit button is disabled until then (auth forms), and the root
+ * layout's controller marks `<html data-hydrated>` (forms that also work without
+ * JavaScript are enabled from the start, so they need the marker).
+ */
 export async function ready(page: Page) {
   await expect(submitButton(page)).toBeEnabled({ timeout: 30_000 });
+  await page.locator('html[data-hydrated="1"]').waitFor({ timeout: 30_000 });
+}
+
+/** Waits until the page is interactive (any page: the root layout marks `<html data-hydrated>`). */
+export async function hydrated(page: Page) {
+  await page.locator('html[data-hydrated="1"]').waitFor({ timeout: 30_000 });
 }
 
 export async function fillLogin(

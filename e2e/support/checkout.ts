@@ -18,6 +18,7 @@ import { adminToken, product } from "./shop";
  */
 
 export type Customer = {
+  id: number;
   national: string;
   e164: string;
   token: string;
@@ -91,7 +92,7 @@ export async function customer(
   const name = `e2e-${label}-${Date.now()}`;
   const pair: TokenPair = await registerViaApi(name, phone.e164);
   accounts.token(phone.e164, pair.access_token);
-  return { ...phone, token: pair.access_token, name };
+  return { ...phone, id: pair.user.id, token: pair.access_token, name };
 }
 
 /**

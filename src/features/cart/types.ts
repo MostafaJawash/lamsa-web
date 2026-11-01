@@ -22,7 +22,12 @@ export type AnyCart = Cart | CartPreview;
 export type AnyCartLine = CartLine | CartPreviewLine;
 
 /** Badge numbers; a missing field means "unchanged". */
-export type Counts = { cart?: number; favorites?: number };
+export type Counts = {
+  cart?: number;
+  favorites?: number;
+  /** Unread notifications (the account tab and the notifications link). */
+  notifications?: number;
+};
 
 /** A failed cart or favorites action (see lines.ts `cartErrorFrom`). */
 export type CartError = {

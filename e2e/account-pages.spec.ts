@@ -1,4 +1,5 @@
 import { expect, test } from "./support/fixtures";
+import { sendMessage, waitForInbox } from "./support/notifications";
 import {
   ALEPPO,
   DAMASCUS,
@@ -28,7 +29,7 @@ for (const width of WIDTHS) {
   test.describe(`layout at ${width}px`, () => {
     test.use({ viewport: { width, height: 800 } });
 
-    test("checkout, success, orders, order and addresses: no horizontal scroll, the right chrome", async ({
+    test("checkout, success, orders, order, addresses, settings and notifications: no horizontal scroll, the right chrome", async ({
       page,
       accounts,
     }) => {
@@ -38,8 +39,14 @@ for (const width of WIDTHS) {
       await addAddress(who.token, ALEPPO);
       const order = await makeOrder(accounts, who, home.id, "damascus");
       await addToCart(who.token, SYP_PRODUCT, 2);
+      for (let n = 1; n <= 11; n++)
+        await sendMessage(who.id, `رسالة ${n}`, "نص الرسالة");
+      await waitForInbox(who.token, 11);
 
       const paths = [
+        "/account/settings",
+        "/account/notifications",
+        "/account/notifications?page=2",
         "/checkout",
         `/checkout/success/${order.id}`,
         "/account/orders",
@@ -48,7 +55,7 @@ for (const width of WIDTHS) {
         "/account/addresses?new=1",
         `/account/addresses?edit=${home.id}`,
       ];
-      await signIn(page, who, paths[0]!);
+      await signIn(page, who, "/checkout");
       for (const path of paths) {
         await page.goto(path);
         await page.evaluate(() => document.fonts.ready);
@@ -98,7 +105,7 @@ for (const width of WIDTHS) {
         const wide = await page.evaluate(() =>
           [
             ...document.querySelectorAll<HTMLElement>(
-              ".lm-box, .lm-summary, .lm-addr, .lm-order-row",
+              ".lm-box, .lm-summary, .lm-addr, .lm-order-row, .lm-notif",
             ),
           ]
             .filter((el) => el.offsetParent !== null)
@@ -146,6 +153,8 @@ test("tokens never reach the browser through these pages", async ({
     `/account/orders/${order.id}`,
     "/account/addresses",
     "/account/addresses?new=1",
+    "/account/settings",
+    "/account/notifications",
   ];
   for (const path of paths) {
     await page.goto(path);

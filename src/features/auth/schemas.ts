@@ -92,7 +92,7 @@ const countryCode = z.enum(
   phoneCountryCodes as unknown as [PhoneCountryCode, ...PhoneCountryCode[]],
 );
 
-const phone = z.string().check(
+export const phone = z.string().check(
   z.trim(),
   z.minLength(1, { error: t("auth.errors.phoneRequired") }),
   z.maxLength(PHONE_MAX, { error: t("auth.errors.phoneInvalid") }),
@@ -106,14 +106,14 @@ const phone = z.string().check(
   ),
 );
 
-const currentPassword = z
+export const currentPassword = z
   .string()
   .check(
     z.minLength(1, { error: t("auth.errors.passwordRequired") }),
     z.maxLength(1024, { error: t("auth.errors.passwordLong") }),
   );
 
-const newPassword = z.string().check(
+export const newPassword = z.string().check(
   z.minLength(PASSWORD_MIN, { error: t("auth.errors.passwordShort") }),
   z.maxLength(PASSWORD_MAX, { error: t("auth.errors.passwordLong") }),
   z.refine((value) => !ONLY_DIGITS.test(value), {

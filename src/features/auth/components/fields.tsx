@@ -63,7 +63,8 @@ export function TextField({
   name: string;
   label: string;
   error?: string;
-  registration: UseFormRegisterReturn;
+  /** react-hook-form's `register(name)`; plain forms pass `name`-less props instead. */
+  registration?: UseFormRegisterReturn;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "name">) {
   const id = useIds(name);
   return (
@@ -75,6 +76,7 @@ export function TextField({
         className="lm-inp"
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(error && id.error)}
+        name={registration ? undefined : name}
         {...input}
         {...registration}
       />
@@ -82,6 +84,18 @@ export function TextField({
     </div>
   );
 }
+
+/** Props of a field in a plain (non react-hook-form) form: an input or the country select. */
+type PlainInput = {
+  name: string;
+  value?: string;
+  onChange?: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => void;
+  onBlur?: (
+    event: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => void;
+};
 
 /**
  * Prototype `.ph-row`: the country code select and the number (LTR, tel keyboard).
@@ -91,15 +105,18 @@ export function PhoneField({
   error,
   countryCode,
   phone,
+  label = t("auth.fields.phone"),
 }: {
   error?: string;
-  countryCode: UseFormRegisterReturn;
-  phone: UseFormRegisterReturn;
+  /** react-hook-form registrations, or plain props (`name`, `value`, `onChange`) for a plain form. */
+  countryCode: UseFormRegisterReturn | PlainInput;
+  phone: UseFormRegisterReturn | PlainInput;
+  label?: string;
 }) {
   const id = useIds("phone");
   return (
     <div className="lm-fld">
-      <label htmlFor={id.input}>{t("auth.fields.phone")}</label>
+      <label htmlFor={id.input}>{label}</label>
       <div className="lm-ph-row">
         <select
           className="lm-inp"
@@ -147,11 +164,15 @@ export function PasswordField({
   autoComplete,
   value,
   phoneForms,
+  inputProps,
 }: {
   name: string;
   label: string;
   error?: string;
-  registration: UseFormRegisterReturn;
+  /** react-hook-form's `register(name)`; plain forms pass `inputProps` instead. */
+  registration?: UseFormRegisterReturn;
+  /** `value` / `onChange` / `onBlur` of a plain form. */
+  inputProps?: Omit<PlainInput, "name">;
   autoComplete: "current-password" | "new-password";
   /** The current value, to show the rules live (new passwords only). */
   value?: string;
@@ -178,6 +199,8 @@ export function PasswordField({
             error && id.error,
             showRules && id.hint,
           )}
+          name={registration ? undefined : name}
+          {...inputProps}
           {...registration}
         />
         <button

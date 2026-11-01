@@ -400,6 +400,63 @@ test.describe("must_change_password gate", () => {
   });
 });
 
+test.describe("must_change_password gate without JavaScript", () => {
+  test("the forced change is a plain form and continues to the page that was asked for", async ({
+    page,
+    browser,
+    accounts,
+  }) => {
+    const adminPhone = process.env.E2E_ADMIN_PHONE;
+    const adminPassword = process.env.E2E_ADMIN_PASSWORD;
+    test.skip(!adminPhone || !adminPassword, "no e2e admin (backend down?)");
+    const newPassword = "E2e-new-pass-98";
+    const user = await registeredUser(accounts, `e2e-gate-nojs ${Date.now()}`);
+    const admin = await loginViaApi(adminPhone ?? "", adminPassword ?? "");
+    const me = await loginViaApi(user.e164, PASSWORD);
+    const { temporary_password: temporary } = await call<{
+      temporary_password: string;
+    }>("POST", `/admin/users/${me.user.id}/reset-password`, {
+      token: admin.access_token,
+    });
+    accounts.phone(user.e164, temporary, newPassword);
+
+    await page.goto("/login");
+    await fillLogin(page, user.national, temporary);
+    await page.waitForURL(/\/account\/change-password/);
+    const plain = await browser.newContext({
+      storageState: await page.context().storageState(),
+      javaScriptEnabled: false,
+      locale: "ar",
+    });
+    const nojs = await plain.newPage();
+    await nojs.goto("/brands");
+    await nojs.waitForURL("/account/change-password?next=%2Fbrands");
+    await expect(nojs.locator(".lm-note")).toContainText("كلمة مرور مؤقتة");
+
+    // A refused attempt comes back on its field, still in the gate.
+    const form = nojs.locator('[data-settings-form="password"]');
+    await form.locator('[data-field="currentPassword"]').fill(temporary);
+    await form.locator('[data-field="newPassword"]').fill("12345678");
+    await form.locator('[data-field="confirmPassword"]').fill("12345678");
+    await form.locator("button[type=submit]").click();
+    await expect(
+      nojs.locator('[data-field-error="newPassword"]'),
+    ).toBeVisible();
+    await expect(nojs).toHaveURL(/change-password\?next=%2Fbrands/);
+
+    const again = nojs.locator('[data-settings-form="password"]');
+    await again.locator('[data-field="currentPassword"]').fill(temporary);
+    await again.locator('[data-field="newPassword"]').fill(newPassword);
+    await again.locator('[data-field="confirmPassword"]').fill(newPassword);
+    await again.locator("button[type=submit]").click();
+    // (A plain post keeps the #password of the failed attempt's URL; harmless.)
+    await nojs.waitForURL(/\/brands(#password)?$/);
+    await nojs.goto("/account");
+    await expect(nojs.locator(".lm-profile h2")).toHaveText(user.name);
+    await plain.close();
+  });
+});
+
 test.describe("tokens never reach the browser", () => {
   test("not in the HTML, the JS, localStorage or document.cookie", async ({
     page,

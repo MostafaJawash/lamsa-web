@@ -3,7 +3,7 @@
 Customer website of the **Lamsa** (لمسة) beauty store. Arabic only for now, right to left.
 The backend is the FastAPI project in [`../lamsa-backend`](../lamsa-backend); its README describes the API, the auth flow, error codes and image sizes.
 
-> Status: phase 5. Checkout, orders and addresses are built (see [Checkout, orders and addresses](#checkout-orders-and-addresses)). The global layout, the home page and the catalog pages (category, brand, new, sale, search, brand grid, product) reproduce the design prototype with real backend data. Authentication works end to end (phone + password, Google, silent refresh, forced password change, logout), and the account page shows the profile card. Cart and favorites work for guests and logged-in users: hearts everywhere, header and tabbar badges, the cart and favorites pages, and the merge after login. Checkout, the success page, the orders list and order page and the address book are real; notifications and settings still render just their Arabic title.
+> Status: phase 6. The account area is complete: profile, phone change, password change, notification preferences and the notifications inbox (see [Account settings and notifications](#account-settings-and-notifications)). Checkout, orders and addresses are built (see [Checkout, orders and addresses](#checkout-orders-and-addresses)). The global layout, the home page and the catalog pages (category, brand, new, sale, search, brand grid, product) reproduce the design prototype with real backend data. Authentication works end to end (phone + password, Google, silent refresh, forced password change, logout), and the account page shows the profile card. Cart and favorites work for guests and logged-in users: hearts everywhere, header and tabbar badges, the cart and favorites pages, and the merge after login. Checkout, the success page, the orders list and order page, the address book, the settings page and the notifications inbox are real.
 
 ## Stack
 
@@ -62,7 +62,7 @@ src/
   lib/utils.ts              cn()
   proxy.ts                  Next.js 16 Proxy (formerly middleware): silent refresh, auth gates, catalog 404s
 tests/                      Vitest unit tests
-e2e/                        Playwright tests (home, catalog, layout at 4 widths, auth, cart and favorites, stock changes, backend down, dev Google, IP forwarding); e2e/screenshots/ is git-ignored
+e2e/                        Playwright tests (home, catalog, layout at 4 widths, auth, cart and favorites, checkout, orders, addresses, settings, notifications, stock changes, backend down, dev Google, IP forwarding); e2e/screenshots/ is git-ignored
 scripts/start-standalone.mjs  Starts the standalone build with .env files and static assets (used by npm start)
 scripts/visual-compare.mjs    Screenshots the prototype and the site side by side
 scripts/bundle-report.mjs     Client JS per route from the Next.js bundle analyzer
@@ -124,7 +124,7 @@ Backend behaviour to know: logout-all and an admin password reset end the refres
 
 ### Flows and forms
 
-Login, register, Google completion and change password are react-hook-form + zod forms (`src/features/auth`). The same schemas (`schemas.ts`, `zod/mini`, loaded only on the auth pages) are re-validated in the server actions (`actions.ts`). The phone field is the prototype `.ph-row`: the country code (`phoneCountryCodes` in `src/config/site.ts`) plus the number without its trunk `0`; the backend normalizes it. New passwords show the backend rules live (8–128 characters, not only digits, not the phone).
+Login, register and Google completion are react-hook-form + zod forms (`src/features/auth`); change password is a plain `<form action>` that also works without JavaScript (`src/features/account/components/password-form.tsx`, see "Account settings and notifications"), re-using the same schemas and the `PasswordField` with its live rules. The same schemas (`schemas.ts`, `zod/mini`, loaded only on the auth pages) are re-validated in the server actions (`actions.ts`). The phone field is the prototype `.ph-row`: the country code (`phoneCountryCodes` in `src/config/site.ts`) plus the number without its trunk `0`; the backend normalizes it. New passwords show the backend rules live (8–128 characters, not only digits, not the phone).
 
 Backend errors → fields (`errors.ts`, unit-tested):
 
@@ -444,6 +444,58 @@ For clicking through checkout by hand on a development backend: sign in with the
 - `e2e/addresses.spec.ts`: the governorate list against the map config, CRUD, the default, delete with a dialog, the address limit, someone else's address, no-JavaScript.
 - `e2e/checkout-global.spec.ts` (the `stock` project): a delivery fee changed while the customer looks at checkout, a cart with issues, stock running out at confirmation, reorder with an unavailable product.
 - `e2e/account-pages.spec.ts`: the four responsive widths of `layout.spec.ts` and the rule that no token reaches the browser through these pages.
+
+## Account settings and notifications
+
+Phase 6 closes the account area. Everything is backend-decided (rules, errors, what counts as read); the site validates with the same rules for instant feedback and shows the backend's own Arabic message for anything it refuses.
+
+### Pages
+
+| Route                      | What                                                                                                                                                                                                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/account/settings`        | Four boxes: **بياناتي** (name, email), **رقم الهاتف**, **كلمة المرور** (phone accounts) and **تفضيلات الإشعارات**. The inbox links to the last one (`#notifications`)                                                                                    |
+| `/account/change-password` | The same password form. It is also the gate page while a temporary password must be changed (`src/proxy.ts` sends every page here with `?next=`); there only "تسجيل الخروج" is offered, and a successful change continues to `next` (default `/account`) |
+| `/account/notifications`   | The inbox: unread summary, "تعليم الكل كمقروء", one row per notification, the catalog pager (10 per page), an empty state                                                                                                                                |
+
+All are blocking routes (`export const instant = false`), `noindex, nofollow`, behind the login gate, and work without JavaScript. Forms are `<form action>` with server actions in `src/features/account/settings-actions.ts` and `src/features/notifications/actions.ts`; the shared hook `useSettingsForm` gives the live rules after a field is touched, server errors until that field is edited, one submit at a time and the focus on the first invalid field. A failed plain post comes back by redirect with `?fs=` (see "Without JavaScript" above), never carrying a password.
+
+### Rules the backend enforces (and the site mirrors)
+
+- **Name and email** (`PATCH /users/me`): name 1–100 characters after trimming, required; email optional, up to 255, a valid address (the backend is stricter than the site's shape check and refuses reserved domains such as `.test`: the field then shows the email error); a blank email removes it. The action sends only what changed, so a Google account's own address is never re-sent.
+- **Phone** (`POST /users/me/phone`): a **phone account must send `current_password`** (the phone is its login: wrong → `INVALID_CREDENTIALS`, missing → `CURRENT_PASSWORD_REQUIRED`, both shown on the password field); a **Google account sends none** and the form has no password field. `PHONE_TAKEN` (another account has the number) and `INVALID_PHONE` show on the phone field. The number is validated like login and registration (`auth/schemas.ts`, `combinePhone`) and normalized by the backend. **Changing the phone does not end sessions, send an SMS or ask for a code**: the tokens belong to the account, so the visitor stays signed in.
+- **Password** (`POST /auth/password/change`, phone accounts only; Google accounts get `NOT_A_PASSWORD_ACCOUNT`, so the page only explains): current password (`INVALID_CREDENTIALS` on its field), new password 8–128 characters, not only digits, not the phone (`WEAK_PASSWORD` with a specific message), different from the current one (`SAME_PASSWORD`). **The backend ends every other session and returns a fresh token pair for this one**: the action stores it (new cookies, the temporary-password flag cleared) and the guest cart merge runs, as after a login. The new tokens never reach the page. A wrong current password is also a 401, so error handling looks at the code (`isSessionGone`), never at the status alone.
+
+### Notification preferences
+
+`GET/PATCH /users/me/notification-preferences` exposes three switches, all on by default; the page renders one row per key the backend returns and has text for (`src/features/notifications/preferences.ts`, checked against the generated schema):
+
+| Key                     | Label (Arabic)    | What it controls in the backend                                                                                              |
+| ----------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `notify_marketing`      | العروض والتخفيضات | The store's promotional campaigns (broadcasts to everyone). While it is off they are not pushed **and the inbox hides them** |
+| `notify_favorites`      | تنبيهات المفضلة   | "Back in stock" and "price dropped" alerts for products in the favorites (a cooldown per product applies)                    |
+| `notify_cart_reminders` | تذكير السلة       | The reminder about a cart left without an order (once per cart change, after the delay the store configured)                 |
+
+`order_updates` is returned as always on: **order status notifications cannot be switched off** (nor can the store's direct messages), so there is no switch for it, only a note. Each switch **saves at once** (the same optimistic idea as the hearts): it moves immediately, the server action runs, and on a failure (the backend's refusal or a lost connection) it moves back and shows the reason; a toast confirms a save. A single save button would hide which change failed and add a step to a one-tap setting. Without JavaScript each switch is its own small form with its own "حفظ" button.
+
+### The inbox
+
+`GET /notifications` returns the customer's own notifications **and the store's broadcasts**, sent ones only, newest first, with `unread_count`; paging is `page` / `page_size` (the site uses 10). "Read" is per customer: a broadcast read by one customer stays unread for the others, so "mark all as read" (`POST /notifications/read-all`) only ever concerns the signed-in customer; `POST /notifications/{id}/read` is idempotent and answers `NOTIFICATION_NOT_FOUND` for anything outside the customer's inbox (someone else's message, a hidden marketing one).
+
+- A row shows the title, the body and the store-time date; unread rows have a dot, a tinted background and a stronger title (and a screen-reader "غير مقروء").
+- A notification that **leads somewhere** (the backend's `link`: category, product, brand, new, sale, an https url, or the customer's order, also derived from `order_id`) is one whole `<button>` in a form: the server action marks it read, **looks the destination up from the backend's own list (the form carries only the id and the page)** and redirects there. One without a target is plain text with its own "تعليم كمقروء".
+- **Badges**: the unread count is a third kind (`notifications`) in the existing client badge store (`features/cart/badge-store.ts`), shown on the "حسابي" tab of the mobile tabbar, on the desktop header's account entry and next to "الإشعارات" in the account navigation. `getBadgeCounts()` reads it with `GET /notifications/unread-count` (0 for guests); the inbox page seeds the store with what it just read (`UnreadSync`), so opening or marking read updates all three at once.
+- There is no per-row client component: rows are server components, rows and "mark all" are plain form posts, the pager is the catalog's `PagerLinks`.
+
+### Demo customer
+
+The demo customer (+963 944 000 111) has two unread notifications to click through, both produced by real actions of earlier work: the order confirmation of a test order (it leads to the order) and the backend's cart reminder.
+
+### Tests
+
+- Unit: `tests/settings-validation.test.ts` (profile, phone and password rules, the reused phone and password schemas, the backend error → field mapping, `isSessionGone`), `tests/notifications.test.ts` (preference rows and their labels, where a notification leads, the notifications badge in the shared store, the new flash kinds, the Arabic plural of the unread count).
+- `e2e/settings.spec.ts`: profile rules, save, clear and a backend refusal; phone (missing, wrong and right password, an invalid and a taken number); password (every rule, a wrong current password, the change keeps this session only and signs the other device out, no token in the page or storage after it); every preference switch and that it persists; a failed save moves the switch back; the same forms without JavaScript; another customer's data is not in the page.
+- `e2e/notifications.spec.ts`: the empty state, pages of ten, one and all marked read with the badges following (desktop and phone), rows with a link, no-JavaScript paging and marking (including a forged foreign notification id), a foreign notification refused by the backend, no tokens in the pages or in the actions' payloads.
+- `e2e/auth.spec.ts`: the forced password change, with and without JavaScript. `e2e/auth-dev.spec.ts`: a Google account's settings (no password anywhere, the phone changes without one). `e2e/account-pages.spec.ts` covers both new pages at 360, 768, 1024 and 1440px.
 
 ## Data, empty and error states
 

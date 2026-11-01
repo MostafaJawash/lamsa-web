@@ -25,6 +25,11 @@ export type Flash =
   | { kind: "addressDeleted" }
   | { kind: "addressDefault" }
   | { kind: "orderCancelled" }
+  | { kind: "profileSaved" }
+  | { kind: "phoneChanged" }
+  | { kind: "passwordChanged" }
+  | { kind: "preferenceSaved" }
+  | { kind: "notificationsRead" }
   | { kind: "error"; code: string; n: number | null };
 
 export type FlashToast = {
@@ -42,6 +47,11 @@ const SIMPLE = [
   "addressDeleted",
   "addressDefault",
   "orderCancelled",
+  "profileSaved",
+  "phoneChanged",
+  "passwordChanged",
+  "preferenceSaved",
+  "notificationsRead",
 ] as const;
 const CODE = /^[A-Z][A-Z_]{1,40}$/;
 const ID = /^[a-z0-9]{6,16}$/;
@@ -133,6 +143,16 @@ export function flashToast(flash: Flash): FlashToast | null {
       return { text: t("toast.addressDefault") };
     case "orderCancelled":
       return { text: t("toast.orderCancelled") };
+    case "profileSaved":
+      return { text: t("toast.profileSaved") };
+    case "phoneChanged":
+      return { text: t("toast.phoneChanged") };
+    case "passwordChanged":
+      return { text: t("toast.passwordChanged") };
+    case "preferenceSaved":
+      return { text: t("toast.preferenceSaved") };
+    case "notificationsRead":
+      return { text: t("toast.notificationsRead") };
     case "error":
       return {
         text: cartErrorText(

@@ -20,11 +20,7 @@ import type { Schema } from "@/lib/api/types";
 import { withAccess } from "@/lib/auth/action-session";
 import { needsRefresh } from "@/lib/auth/jwt";
 import { safeNext, withNext } from "@/lib/auth/next-param";
-import {
-  ACCOUNT_PATH,
-  CHANGE_PASSWORD_PATH,
-  COMPLETE_PROFILE_PATH,
-} from "@/lib/auth/paths";
+import { CHANGE_PASSWORD_PATH, COMPLETE_PROFILE_PATH } from "@/lib/auth/paths";
 import {
   clearGoogleSignup,
   clearSession,
@@ -39,8 +35,8 @@ import { ApiError } from "@/lib/errors";
 
 import { failure, mapAuthError, type AuthResult } from "./errors";
 import { devGoogleAvailable } from "./google";
+import { retryOnceIfBusy } from "./retry";
 import {
-  changePasswordSchema,
   combinePhone,
   completeProfileSchema,
   fieldErrorsOf,
@@ -49,20 +45,6 @@ import {
 } from "./schemas";
 
 type TokenPair = Schema<"TokenPair">;
-
-/** SERVICE_BUSY: wait Retry-After (capped) and retry once, as the backend asks. */
-const BUSY_RETRY_MAX_SECONDS = 5;
-
-async function retryOnceIfBusy<T>(call: () => Promise<T>): Promise<T> {
-  try {
-    return await call();
-  } catch (error) {
-    if (!(error instanceof ApiError) || !error.is("SERVICE_BUSY")) throw error;
-    const seconds = Math.min(error.retryAfter ?? 1, BUSY_RETRY_MAX_SECONDS);
-    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-    return call();
-  }
-}
 
 /**
  * Stores the pair, moves the guest cart and favorites into the account (never blocks:
@@ -218,42 +200,6 @@ export async function completeProfile(
   }
   await clearGoogleSignup();
   return signedIn(pair, next);
-}
-
-export async function changePassword(
-  input: unknown,
-  next: unknown,
-): Promise<AuthResult> {
-  const parsed = changePasswordSchema.safeParse(input);
-  if (!parsed.success)
-    return failure({ fieldErrors: fieldErrorsOf(parsed.error) });
-  const { currentPassword, newPassword } = parsed.data;
-  let pair: TokenPair;
-  try {
-    pair = await withAccess((api) =>
-      retryOnceIfBusy(() =>
-        unwrap(
-          api.POST("/auth/password/change", {
-            body: {
-              current_password: currentPassword,
-              new_password: newPassword,
-            },
-          }),
-        ),
-      ),
-    );
-  } catch (error) {
-    if (error instanceof ApiError && error.is("NOT_AUTHENTICATED"))
-      redirect(withNext("/login", CHANGE_PASSWORD_PATH) as Route);
-    return mapAuthError(error, {
-      passwordField: "newPassword",
-      credentialsField: "currentPassword",
-    });
-  }
-  await setSession(pair);
-  await mergeAfterSignIn(pair.access_token);
-  const target = safeNext(next);
-  redirect((target === "/" ? ACCOUNT_PATH : target) as Route);
 }
 
 /**

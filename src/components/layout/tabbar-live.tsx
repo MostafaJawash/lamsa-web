@@ -12,7 +12,11 @@ export async function TabbarLive() {
   return (
     <Tabbar
       accountHref={user ? "/account" : "/login"}
-      counts={{ cart: counts?.cart ?? 0, favorites: counts?.favorites ?? 0 }}
+      counts={{
+        cart: counts?.cart ?? 0,
+        favorites: counts?.favorites ?? 0,
+        notifications: counts?.notifications ?? 0,
+      }}
     />
   );
 }

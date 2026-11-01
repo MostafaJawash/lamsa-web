@@ -33,7 +33,7 @@ const ICONS: Record<TabKey, React.ReactNode> = {
  * badges on favorites and cart. "حسابي" goes to /account when signed in, /login for
  * guests (`accountHref`).
  */
-type TabCounts = { cart: number; favorites: number };
+type TabCounts = { cart: number; favorites: number; notifications: number };
 
 export function TabbarView({
   active,
@@ -58,6 +58,9 @@ export function TabbarView({
           <span>{t(tab.labelKey)}</span>
           {counts && (tab.key === "cart" || tab.key === "favorites") ? (
             <CountBadge kind={tab.key} initial={counts[tab.key]} />
+          ) : null}
+          {counts && tab.key === "account" ? (
+            <CountBadge kind="notifications" initial={counts.notifications} />
           ) : null}
         </Link>
       ))}

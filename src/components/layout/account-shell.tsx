@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { siteConfig } from "@/config/site";
 import { t } from "@/i18n";
+
+import { BadgeLive } from "./badge-live";
 
 /**
  * Account pages: the account navigation next to the page (placeholder; its design comes
@@ -24,6 +27,13 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
                 className="flex min-h-11 items-center rounded-lg px-3 text-sm whitespace-nowrap text-ink-muted hover:bg-surface-2 hover:text-ink"
               >
                 {t(item.labelKey)}
+                {item.href === "/account/notifications" ? (
+                  <span className="lm-inline-badge">
+                    <Suspense fallback={null}>
+                      <BadgeLive kind="notifications" />
+                    </Suspense>
+                  </span>
+                ) : null}
               </Link>
             </li>
           ))}

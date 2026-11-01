@@ -83,3 +83,55 @@ test("Google dev: PHONE_TAKEN on complete-profile", async ({
   ).toBeVisible();
   await expect(page).toHaveURL(/\/complete-profile$/);
 });
+
+test("Google account settings: no password anywhere, the phone changes without one", async ({
+  page,
+  accounts,
+}) => {
+  await clickDevGoogle(page);
+  await page.waitForURL("/complete-profile", { timeout: 60_000 });
+  const sub = (await cookieValue(page, "lamsa_devg")) ?? "";
+  accounts.google(sub);
+  await ready(page);
+  await page.locator('[data-field="name"]:visible').fill("e2e-google إعدادات");
+  await page
+    .locator('[data-field="phone"]:visible')
+    .fill(uniquePhone().national);
+  await submitButton(page).click();
+  await page.waitForURL("/", { timeout: 60_000 });
+
+  await page.goto("/account/settings", { timeout: 150_000 });
+  await page.locator('html[data-hydrated="1"]').waitFor({ timeout: 60_000 });
+  // The password section only explains; the phone form has no password field.
+  await expect(page.getByTestId("google-password-note")).toBeVisible();
+  await expect(page.locator('[data-settings-form="password"]')).toHaveCount(0);
+  const phoneForm = page.locator('[data-settings-form="phone"]:visible');
+  await expect(phoneForm).toBeVisible();
+  await expect(phoneForm.locator('[data-field="currentPassword"]')).toHaveCount(
+    0,
+  );
+
+  // The Google address (not one the backend would accept as new) stays when only the name changes.
+  const profile = page.locator('[data-settings-form="profile"]:visible');
+  await expect(profile.locator('[data-field="email"]')).toHaveValue(
+    /^dev-[a-f0-9]{16}@example\.test$/,
+  );
+  await profile.locator('[data-field="name"]').fill("e2e-google جديد");
+  await profile.locator("button[type=submit]").click();
+  await expect(page.locator(".lm-toast").first()).toContainText(
+    "تم حفظ بياناتك",
+  );
+
+  const target = uniquePhone();
+  await phoneForm.locator('[data-field="phone"]').fill(target.national);
+  await phoneForm.locator("button[type=submit]").click();
+  await expect(page.locator(".lm-toast").first()).toContainText(
+    "تم تغيير رقم الهاتف",
+  );
+  await expect(page.getByTestId("current-phone")).toHaveText(target.e164);
+
+  // The password page explains too; the backend's own guard is NOT_A_PASSWORD_ACCOUNT.
+  await page.goto("/account/change-password");
+  await expect(page.locator(".lm-note")).toContainText("Google");
+  await expect(page.locator('[data-settings-form="password"]')).toHaveCount(0);
+});

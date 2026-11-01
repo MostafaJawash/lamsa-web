@@ -1,6 +1,7 @@
 /**
  * cart: server-side reads.
- * Backend: GET /cart, GET /cart/count, POST /cart/preview (guests), GET /favorites/ids
+ * Backend: GET /cart, GET /cart/count, POST /cart/preview (guests), GET /favorites/ids,
+ * GET /notifications/unread-count
  *
  * Personal data: never cached, render inside <Suspense>. Server-only.
  */
@@ -72,15 +73,26 @@ export const getBadgeCounts = cache(
         readGuestCart(),
         readGuestFavorites(),
       ]);
-      return { cart: cartQuantity(cart), favorites: favorites.length };
+      return {
+        cart: cartQuantity(cart),
+        favorites: favorites.length,
+        notifications: 0,
+      };
     }
     try {
       const api = await getApi();
-      const [count, ids] = await Promise.all([
+      const [count, ids, unread] = await Promise.all([
         unwrap(api.GET("/cart/count", { signal: pageTimeout() })),
         unwrap(api.GET("/favorites/ids", { signal: pageTimeout() })),
+        unwrap(
+          api.GET("/notifications/unread-count", { signal: pageTimeout() }),
+        ),
       ]);
-      return { cart: count.items_count, favorites: ids.product_ids.length };
+      return {
+        cart: count.items_count,
+        favorites: ids.product_ids.length,
+        notifications: unread.unread_count,
+      };
     } catch (error) {
       logQueryFailure("badges", String(error));
       return null;

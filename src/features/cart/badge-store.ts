@@ -1,18 +1,19 @@
 import type { Counts } from "./types";
 
 /**
- * The header and tabbar badges: one tiny store, no context provider. Server holes seed
+ * The header and tabbar badges (cart, favorites and the unread notifications): one tiny store, no context provider. Server holes seed
  * it (the counts they read for this request), every cart or favorites mutation writes
  * the numbers it got back, and the badges subscribe with useSyncExternalStore. Values
  * are null until seeded, so a badge shows its server-rendered prop until then.
  */
-export type BadgeKind = "cart" | "favorites";
+export type BadgeKind = "cart" | "favorites" | "notifications";
 
 type Listener = () => void;
 
 const values: Record<BadgeKind, number | null> = {
   cart: null,
   favorites: null,
+  notifications: null,
 };
 const listeners = new Set<Listener>();
 
@@ -31,7 +32,7 @@ export const badgeStore = {
   /** Writes the counts that are present; ignores negatives and non-integers. */
   set(counts: Counts) {
     let changed = false;
-    for (const kind of ["cart", "favorites"] as const) {
+    for (const kind of ["cart", "favorites", "notifications"] as const) {
       const value = counts[kind];
       if (value === undefined || !Number.isInteger(value) || value < 0)
         continue;
@@ -57,6 +58,7 @@ export const badgeStore = {
   reset() {
     values.cart = null;
     values.favorites = null;
+    values.notifications = null;
     emit();
   },
 };

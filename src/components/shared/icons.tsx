@@ -152,6 +152,16 @@ export function PinIcon(props: IconProps) {
   );
 }
 
+/** Not in the prototype set: a bell in the same style (the empty notifications inbox). */
+export function BellIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z" />
+      <path d="M10 21a2.2 2.2 0 0 0 4 0" />
+    </Svg>
+  );
+}
+
 /** Not in the prototype set: drawn in the same style for the password toggle. */
 export function EyeIcon(props: IconProps) {
   return (
