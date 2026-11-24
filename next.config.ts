@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // Dev only: other devices on the LAN (a phone opening http://<this PC's IP>:3000) are blocked
+  // from the dev server's HMR endpoint by default, and the page then never hydrates. Only the
+  // hostname is matched; `*` stands for exactly one label (so 10.8.8.* is the 10.8.8.0/24 range).
+  allowedDevOrigins: ["10.8.8.*", "192.168.*.*"],
   images: {
     // The backend already serves WebP in thumb / medium / large; never re-optimize here.
     loader: "custom",

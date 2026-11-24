@@ -49,7 +49,18 @@ import type {
 
 const RAIL_SIZE = 12;
 
-const PRODUCTS_LIFE: CacheLifetime = { stale: 45, revalidate: 45, expire: 600 };
+/**
+ * Lists, facets and rails: fresh on the server for 45 s. `stale` is 5 minutes (the
+ * minimum for the route's App Shell): a cache that goes stale sooner is left out of the
+ * shell, and the list pages' preview (the Suspense fallback of the search-params part)
+ * reads it, so their navigations would not be instant. A visitor's router may therefore
+ * reuse a list for up to 5 minutes on a client navigation; any revalidation clears that.
+ */
+const PRODUCTS_LIFE: CacheLifetime = {
+  stale: 300,
+  revalidate: 45,
+  expire: 600,
+};
 const TAXONOMY_LIFE: CacheLifetime = {
   stale: 300,
   revalidate: 300,
