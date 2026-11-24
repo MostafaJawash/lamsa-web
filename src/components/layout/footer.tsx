@@ -3,6 +3,8 @@ import { cacheLife } from "next/cache";
 import { t } from "@/i18n";
 import { formatYearArabic } from "@/lib/format";
 
+import { ThemeToggle } from "./theme-toggle";
+
 /** The current year, cached so the footer stays part of the static shell. */
 async function currentYear(): Promise<number> {
   "use cache";
@@ -19,6 +21,7 @@ export async function Footer() {
       <span>{t("layout.shippingReturns")}</span>
       <span>{t("layout.contact")}</span>
       <span>{t("layout.cashOnDelivery")}</span>
+      <ThemeToggle />
     </footer>
   );
 }

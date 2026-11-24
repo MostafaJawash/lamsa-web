@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AccountShell } from "@/components/layout/account-shell";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { PageChrome } from "@/components/layout/page-chrome";
 import { EmptyState } from "@/components/shared/empty-state";
 import { UserIcon } from "@/components/shared/icons";
@@ -168,6 +169,17 @@ export default async function SettingsPage({
               {t("notifications.preferences.unavailable")}
             </p>
           )}
+        </section>
+        <section
+          id="appearance"
+          className="lm-box"
+          aria-labelledby="settings-appearance"
+        >
+          <h2 className="lm-box-title" id="settings-appearance">
+            {t("theme.title")}
+          </h2>
+          <p className="lm-hint">{t("theme.hint")}</p>
+          <ThemeToggle />
         </section>
         <PageFlash />
       </AccountShell>

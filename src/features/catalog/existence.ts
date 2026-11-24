@@ -121,6 +121,8 @@ function listQuery(section: string, slug: string | undefined): string | null {
   if (section === "brands" && slug) return `brand=${encodeURIComponent(slug)}`;
   if (section === "new") return "is_new=true";
   if (section === "sale") return "on_sale=true";
+  // "كل المنتجات": no filter at all.
+  if (section === "products") return "";
   return null;
 }
 
@@ -149,7 +151,7 @@ export function catalogRoute(
   search: URLSearchParams,
 ): CatalogRoute | null {
   const match =
-    /^\/(?:(p|c|brands)\/([^/]+)|(new|sale))(?:\/page\/([^/]+))?\/?$/.exec(
+    /^\/(?:(p|c|brands)\/([^/]+)|(new|sale|products))(?:\/page\/([^/]+))?\/?$/.exec(
       pathname,
     );
   if (!match) return null;
@@ -173,7 +175,7 @@ export function catalogRoute(
   }
 
   const query = listQuery(section, slug);
-  if (!query) return null;
+  if (query === null) return null;
 
   if (rawPage !== undefined) {
     if (rawPage === "1")
@@ -192,7 +194,7 @@ export function catalogRoute(
       action: "check",
       check: {
         key: `${query}&page=${page}`,
-        path: `/products?${query}&page=${page}&page_size=${PAGE_SIZE}`,
+        path: `/products?${query ? `${query}&` : ""}page=${page}&page_size=${PAGE_SIZE}`,
         list: true,
       },
     };
@@ -208,7 +210,8 @@ export function catalogRoute(
     };
   }
 
-  if (section === "new" || section === "sale") return null;
+  if (section === "new" || section === "sale" || section === "products")
+    return null;
   const kind = section === "c" ? "category" : "brand";
   return {
     action: "check",

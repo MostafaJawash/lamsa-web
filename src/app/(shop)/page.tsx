@@ -12,7 +12,6 @@ import {
   RailSkeleton,
   TilesSkeleton,
 } from "@/components/shared/skeletons";
-import { mainNav, SALE_HREF } from "@/config/site";
 import {
   FallbackBanners,
   HomeBanners,
@@ -24,7 +23,6 @@ import {
   OnSaleSection,
 } from "@/features/catalog/components/home-sections";
 import { t } from "@/i18n";
-import { cn } from "@/lib/utils";
 
 const HOME_PATH = "/";
 
@@ -39,23 +37,13 @@ export default function HomePage() {
     <PageChrome path="/">
       <h1 className="sr-only">{t("home.title")}</h1>
 
-      {/* Mobile only: fake search field + category chips */}
+      {/* Mobile only: fake search field. The section chips live on the list pages; Home
+          reaches them through the category tiles, the "عرض الكل" links and the Categories tab. */}
       <div className="md:hidden">
         <Link href="/search" className="lm-msearch">
           <SearchIcon />
           <span>{t("layout.searchPlaceholder")}</span>
         </Link>
-        <nav className="lm-chips" aria-label={t("nav.main")}>
-          {mainNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn("lm-chip", item.href === SALE_HREF && "sale")}
-            >
-              {t(item.labelKey)}
-            </Link>
-          ))}
-        </nav>
       </div>
 
       <section aria-label={t("home.banners.label")}>

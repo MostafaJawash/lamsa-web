@@ -7,8 +7,14 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { BagIcon } from "@/components/shared/icons";
 import { ProductCard } from "@/components/shared/product-card";
 import { Section } from "@/components/shared/section";
+import {
+  ALL_PRODUCTS_HREF,
+  GIFTS_CATEGORY_SLUG,
+  GIFTS_HREF,
+} from "@/config/site";
 import { t } from "@/i18n";
 
+import { getGiftsEntry } from "../gifts";
 import {
   getBrands,
   getCategoryTiles,
@@ -65,14 +71,39 @@ export function OnSaleSection({ currentPath }: { currentPath: string }) {
   return <ProductRailSection kind="sale" currentPath={currentPath} />;
 }
 
-/** "تسوّق حسب القسم": top-level categories with products; hidden when there are none. */
+/**
+ * "تسوّق حسب القسم": "كل المنتجات" first, then the gift boxes (the backend category's own
+ * name), then the other top-level categories with products. The categories can fail or be
+ * empty without losing the "كل المنتجات" tile.
+ */
 export async function CategoryTilesSection() {
-  const result = await getCategoryTiles();
-  if (result.status !== "ok") return null;
+  const [categories, gifts, newest] = await Promise.all([
+    getCategoryTiles(),
+    getGiftsEntry(),
+    getNewArrivals(),
+  ]);
+  const others =
+    categories.status === "ok"
+      ? categories.data.filter(({ slug }) => slug !== GIFTS_CATEGORY_SLUG)
+      : [];
+  const allImage =
+    newest.status === "ok" ? (newest.data[0]?.image ?? null) : null;
   return (
     <Section title={t("home.byCategory")}>
-      <CategoryTiles count={result.data.length}>
-        {result.data.map((category) => (
+      <CategoryTiles count={others.length + (gifts ? 2 : 1)}>
+        <CategoryTile
+          href={ALL_PRODUCTS_HREF}
+          label={t("nav.allProducts")}
+          image={allImage}
+        />
+        {gifts ? (
+          <CategoryTile
+            href={GIFTS_HREF}
+            label={gifts.label}
+            image={gifts.image}
+          />
+        ) : null}
+        {others.map((category) => (
           <CategoryTile
             key={category.id}
             href={`/c/${encodeURIComponent(category.slug)}` as Route}

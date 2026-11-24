@@ -3,7 +3,7 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import {
   BagIcon,
@@ -39,14 +39,21 @@ export function TabbarView({
   active,
   accountHref,
   counts,
+  navRef,
 }: {
   active: TabKey | null;
   accountHref: Route;
   /** Badges (prototype `.tabbar .badge`); absent in the static fallback. */
   counts?: TabCounts;
+  /** The <nav>, so `Tabbar` can switch the icon pop on after the first navigation. */
+  navRef?: React.Ref<HTMLElement>;
 }) {
   return (
-    <nav className="lm-tabbar md:hidden" aria-label={t("layout.tabbar")}>
+    <nav
+      ref={navRef}
+      className="lm-tabbar md:hidden"
+      aria-label={t("layout.tabbar")}
+    >
       {tabs.map((tab) => (
         <Link
           key={tab.key}
@@ -81,11 +88,18 @@ export function Tabbar({
   counts: TabCounts;
 }) {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+  const firstPath = useRef(true);
   useEffect(() => {
     recordVisit();
+    // The newly active icon pops (CSS, `.lm-tabbar[data-pop]`): only after a navigation,
+    // never on the first paint. A direct DOM attribute, so no extra render.
+    if (firstPath.current) firstPath.current = false;
+    else navRef.current?.setAttribute("data-pop", "");
   }, [pathname]);
   return (
     <TabbarView
+      navRef={navRef}
       active={navState(pathname).tab}
       accountHref={accountHref}
       counts={counts}

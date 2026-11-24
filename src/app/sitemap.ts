@@ -4,7 +4,14 @@ import { laterPages, pagedPath } from "@/features/catalog/filters";
 import { getCatalogIndex } from "@/features/catalog/queries";
 import { absoluteUrl } from "@/features/catalog/seo";
 
-const STATIC_PATHS = ["/", "/new", "/sale", "/brands", "/categories"] as const;
+const STATIC_PATHS = [
+  "/",
+  "/products",
+  "/new",
+  "/sale",
+  "/brands",
+  "/categories",
+] as const;
 
 /**
  * Sitemap from the API: the static shop pages, every visible category, brand and product,
@@ -29,6 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const addPages = (base: string, count: number) => {
     for (const n of laterPages(count)) add(pagedPath(base, n), 0.4);
   };
+  addPages("/products", products.length);
   addPages("/new", newCount);
   addPages("/sale", saleCount);
   for (const c of categories) {

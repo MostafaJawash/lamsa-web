@@ -8,9 +8,20 @@ function route<T extends string>(href: Route<T>): Route {
   return href as Route;
 }
 
+/**
+ * The gift boxes category (backend `seed` demo data). The site shows the category's own
+ * name from the backend, with `nav.gifts` as the fallback when it can't be read.
+ */
+export const GIFTS_CATEGORY_SLUG = "demo-gifts";
+export const GIFTS_HREF: Route = route("/c/demo-gifts");
+
+/** "كل المنتجات": the unfiltered product list. */
+export const ALL_PRODUCTS_HREF: Route = route("/products");
+
 /** The desktop tab of a top-level category, when the nav has one ("/c/makeup"). */
 export function tabForCategory(slug: string | null | undefined): Route | null {
   if (!slug) return null;
+  if (slug === GIFTS_CATEGORY_SLUG) return GIFTS_HREF;
   const href = `/c/${slug}`;
   return mainNav.find((item) => item.href === href)?.href ?? null;
 }
@@ -122,6 +133,7 @@ function titleFor(pathname: string): MessageKey | null {
     "/new": "pages.new",
     "/sale": "pages.sale",
     "/search": "pages.search",
+    "/products": "pages.allProducts",
     "/cart": "pages.cart",
     "/favorites": "pages.favorites",
     "/login": "pages.login",
@@ -150,9 +162,16 @@ function titleFor(pathname: string): MessageKey | null {
 function tabFor(pathname: string): TabKey | null {
   if (pathname === "/") return "home";
   if (
-    ["/categories", "/c", "/brands", "/p", "/new", "/sale", "/search"].some(
-      (base) => isUnder(pathname, base),
-    )
+    [
+      "/categories",
+      "/c",
+      "/brands",
+      "/p",
+      "/new",
+      "/sale",
+      "/search",
+      "/products",
+    ].some((base) => isUnder(pathname, base))
   ) {
     return "categories";
   }
@@ -172,8 +191,11 @@ function tabFor(pathname: string): TabKey | null {
 export function navState(pathname: string): NavState {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   const desktop = mainNav.find((item) => isUnder(path, item.href));
+  const extra = [ALL_PRODUCTS_HREF, GIFTS_HREF].find((href) =>
+    isUnder(path, href),
+  );
   return {
-    desktopTab: desktop ? desktop.href : null,
+    desktopTab: desktop ? desktop.href : (extra ?? null),
     tab: tabFor(path),
     titleKey: titleFor(path),
     isRoot: ROOTS.has(path),

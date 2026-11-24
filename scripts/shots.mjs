@@ -18,10 +18,14 @@ for (const [w, h, tag] of [
   [1280, 800, "d"],
   [390, 844, "m"],
 ]) {
-  const page = await browser.newPage({
+  // The site is light by default whatever the device prefers: dark needs its cookie.
+  const context = await browser.newContext({
     viewport: { width: w, height: h },
     colorScheme: dark ? "dark" : "light",
   });
+  if (dark)
+    await context.addCookies([{ name: "lamsa-theme", value: "dark", url: base }]);
+  const page = await context.newPage();
   for (const path of paths) {
     await page.goto(base + path, {
       waitUntil: "networkidle",

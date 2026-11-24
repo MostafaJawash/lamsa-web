@@ -6,7 +6,8 @@
  * Lamsa design tokens, from the backend prototype (docs/prototype/lamsa-presentation.html).
  * Raw brand values are `--lamsa-*`; shadcn's semantic tokens (`--primary`, `--muted`, ...)
  * are mapped onto them below, so shadcn components follow the brand automatically.
- * Dark mode follows the system (`prefers-color-scheme`), like the prototype.
+ * Light is ALWAYS the default, whatever the device prefers. Dark applies only when
+ * `<html data-theme="dark">` is set (the footer / settings toggle, see src/lib/theme.ts).
  */
 :root {
   --lamsa-bg: #f7f0f2;
@@ -28,25 +29,23 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --lamsa-bg: #161015;
-    --lamsa-surface: #211820;
-    --lamsa-surface-2: #2c2029;
-    --lamsa-ink: #f4eaf0;
-    --lamsa-muted: #b49faf;
-    --lamsa-line: #3b2c38;
-    --lamsa-accent: #ee5c8a;
-    --lamsa-accent-ink: #1a0f16;
-    --lamsa-accent-soft: #3d1e2d;
-    --lamsa-gold: #d9b98c;
-    --lamsa-ok: #5cc08f;
-    --lamsa-warn: #e3a84a;
-    --lamsa-danger: #f2735f;
-    --lamsa-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px rgb(0 0 0 / 0.4);
+:root[data-theme="dark"] {
+  --lamsa-bg: #161015;
+  --lamsa-surface: #211820;
+  --lamsa-surface-2: #2c2029;
+  --lamsa-ink: #f4eaf0;
+  --lamsa-muted: #b49faf;
+  --lamsa-line: #3b2c38;
+  --lamsa-accent: #ee5c8a;
+  --lamsa-accent-ink: #1a0f16;
+  --lamsa-accent-soft: #3d1e2d;
+  --lamsa-gold: #d9b98c;
+  --lamsa-ok: #5cc08f;
+  --lamsa-warn: #e3a84a;
+  --lamsa-danger: #f2735f;
+  --lamsa-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px rgb(0 0 0 / 0.4);
 
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }
 
 /* shadcn semantic tokens */
@@ -439,7 +438,8 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     border-top: 1px solid var(--lamsa-line);
-    background: var(--lamsa-surface);
+    /* surface-2 (not the page's --lamsa-bg), in light and dark: the bar stands out. */
+    background: var(--lamsa-surface-2);
     padding: 6px 2px calc(12px + env(safe-area-inset-bottom));
   }
   .lm-tabbar a {
@@ -456,9 +456,43 @@
     color: var(--lamsa-accent);
     font-weight: 600;
   }
+  /*
+   * Tab switch: the newly active icon pops (260ms easeOutBack). `data-pop` is set by the
+   * tabbar after its first navigation, so the pop never plays on a plain page load or
+   * on the tab that was already active. prefers-reduced-motion switches every animation
+   * off (rule at the top of this file): the colour change is then instant.
+   */
+  .lm-tabbar[data-pop] a.on .lm-ic {
+    animation: lm-tab-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes lm-tab-pop {
+    from {
+      transform: scale(0.6);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
   .lm-tabbar .lm-badge {
     top: 0;
     inset-inline-start: calc(50% + 4px);
+  }
+  /* Theme toggle (footer and account settings) */
+  .lm-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--lamsa-line);
+    background: var(--lamsa-surface);
+    color: var(--lamsa-ink);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .lm-theme-toggle:hover {
+    border-color: var(--lamsa-accent);
   }
   /* .m-search */
   .lm-msearch {

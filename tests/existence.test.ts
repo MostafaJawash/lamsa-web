@@ -160,6 +160,15 @@ describe("catalogRoute", () => {
     expect(route("/sale/page/2")).toMatchObject({
       check: { path: "/products?on_sale=true&page=2&page_size=24" },
     });
+    // The unfiltered list ("all products").
+    expect(route("/products/page/2")).toMatchObject({
+      check: { path: "/products?page=2&page_size=24", list: true },
+    });
+    expect(route("/products")).toBeNull();
+    expect(route("/products/page/1")).toEqual({
+      action: "redirect",
+      location: "/products",
+    });
   });
 
   it("redirects ?page and /page/1 to the path form, keeping the filters", () => {

@@ -260,6 +260,10 @@ for (const [width, height] of VIEWPORTS) {
       colorScheme: scheme,
       ...(state ? { storageState: state } : {}),
     });
+    if (scheme === "dark")
+      await context.addCookies([
+        { name: "lamsa-theme", value: "dark", url: base },
+      ]);
     const page = await context.newPage();
     for (const path of PAGES) {
       await open(page, base + path);

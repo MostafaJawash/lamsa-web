@@ -6,6 +6,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { IMAGE_FALLBACK_SCRIPT } from "@/components/shared/backend-image";
 import { siteConfig } from "@/config/site";
 import { defaultLocale, getDirection, t } from "@/i18n";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 import "./globals.css";
 
@@ -48,17 +49,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    {
-      media: "(prefers-color-scheme: light)",
-      color: siteConfig.themeColor.light,
-    },
-    {
-      media: "(prefers-color-scheme: dark)",
-      color: siteConfig.themeColor.dark,
-    },
-  ],
-  colorScheme: "light dark",
+  // Light by default for everyone; the theme script / toggle updates this tag for dark.
+  themeColor: siteConfig.themeColor.light,
+  colorScheme: "light",
   width: "device-width",
   initialScale: 1,
   // Content may extend under notches; the mobile header and tabbar pad with env(safe-area-inset-*).
@@ -71,7 +64,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang={defaultLocale}
       dir={getDirection(defaultLocale)}
       className={`${plexArabic.variable} ${reemKufi.variable} h-full`}
+      // The head script may set data-theme="dark" before React hydrates.
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">
         {/* Hides failed backend images so their fallback shows (non-blocking module). */}
         <script

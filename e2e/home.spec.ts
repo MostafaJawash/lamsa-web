@@ -43,7 +43,10 @@ test.describe("home with data", () => {
       .getByRole("region", { name: "تسوّق حسب القسم" })
       .locator(".lm-cat-tile");
     expect(await tiles.count()).toBeGreaterThan(0);
-    await expect(tiles.first()).toHaveAttribute("href", /^\/c\//);
+    // "كل المنتجات" first, then the gift boxes, then the other categories.
+    await expect(tiles.nth(0)).toHaveAttribute("href", "/products");
+    await expect(tiles.nth(1)).toHaveAttribute("href", "/c/demo-gifts");
+    await expect(tiles.nth(2)).toHaveAttribute("href", /^\/c\//);
 
     const brands = page.getByRole("region", { name: "الماركات" });
     await expect(brands.locator(".lm-brand-chip").first()).toHaveAttribute(
@@ -149,8 +152,8 @@ test.describe("mobile chrome", () => {
 
     await page.goto("/");
     await page
-      .locator(".lm-chips")
-      .getByRole("link", { name: "التخفيضات" })
+      .getByRole("region", { name: "عروض لفترة محدودة" })
+      .getByRole("link", { name: "عرض الكل" })
       .click();
     await expect(page).toHaveURL(/\/sale$/);
     await page.getByRole("button", { name: "رجوع" }).click();

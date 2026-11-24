@@ -36,12 +36,18 @@ test("home still renders with fallbacks when the backend is unreachable", async 
   const saleRail = page.getByRole("region", { name: "عروض لفترة محدودة" });
   await expect(saleRail).toContainText("لا توجد عروض حاليًا، تابعنا قريبًا");
 
-  // Categories and brands are hidden; navigation still works from the static config.
-  await expect(
-    page.getByRole("region", { name: "تسوّق حسب القسم" }),
-  ).toHaveCount(0);
+  // The backend's categories and the brands are hidden, but the two static entry points
+  // stay: "كل المنتجات" and the gift boxes (fallback label «علب الهدايا»). Navigation
+  // still works from the static config (all products + the six sections + gifts).
+  const tiles = page
+    .getByRole("region", { name: "تسوّق حسب القسم" })
+    .locator(".lm-cat-tile");
+  await expect(tiles).toHaveCount(2);
+  await expect(tiles.nth(0)).toHaveAttribute("href", "/products");
+  await expect(tiles.nth(1)).toHaveAttribute("href", "/c/demo-gifts");
+  await expect(tiles.nth(1)).toContainText("علب الهدايا");
   await expect(page.getByRole("region", { name: "الماركات" })).toHaveCount(0);
-  await expect(page.locator(".lm-dnav a")).toHaveCount(6);
+  await expect(page.locator(".lm-dnav a")).toHaveCount(8);
 
   // Development notice, dismissible.
   const notice = page
@@ -57,7 +63,8 @@ test("categories page renders every tile without the backend", async ({
 }) => {
   const response = await page.goto("/categories", { timeout: 150_000 });
   expect(response?.status()).toBe(200);
-  await expect(page.locator(".lm-cat-tile")).toHaveCount(6);
+  // All products, the gift boxes (fallback), the five sections and the brands tile.
+  await expect(page.locator(".lm-cat-tile")).toHaveCount(8);
 });
 
 const catalogPages: [string, string][] = [

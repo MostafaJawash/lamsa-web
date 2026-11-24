@@ -1,8 +1,9 @@
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { CategoryTile, CategoryTiles } from "@/components/shared/category-tile";
-import { mainNav } from "@/config/site";
+import { ALL_PRODUCTS_HREF, GIFTS_HREF, mainNav } from "@/config/site";
 import { t } from "@/i18n";
 
+import { getGiftsEntry } from "../gifts";
 import {
   getBrands,
   getCategoryTiles,
@@ -17,14 +18,19 @@ import type { ImageUrls } from "../types";
  * every tile renders even when the backend is down.
  */
 export async function CategoriesGrid() {
-  const [newArrivals, onSale, categories, brands] = await Promise.all([
+  const [newArrivals, onSale, categories, brands, gifts] = await Promise.all([
     getNewArrivals(),
     getOnSale(),
     getCategoryTiles(),
     getBrands(),
+    getGiftsEntry(),
   ]);
 
   const imageFor = (href: string): ImageUrls | null => {
+    if (href === ALL_PRODUCTS_HREF)
+      return newArrivals.status === "ok"
+        ? (newArrivals.data[0]?.image ?? null)
+        : null;
     if (href === "/new")
       return newArrivals.status === "ok"
         ? (newArrivals.data[0]?.image ?? null)
@@ -42,7 +48,19 @@ export async function CategoriesGrid() {
   const firstBrand = brands.status === "ok" ? brands.data[0] : undefined;
 
   return (
-    <CategoryTiles count={tiles.length + 1}>
+    <CategoryTiles count={tiles.length + 2 + (gifts ? 1 : 0)}>
+      <CategoryTile
+        href={ALL_PRODUCTS_HREF}
+        label={t("nav.allProducts")}
+        image={imageFor(ALL_PRODUCTS_HREF)}
+      />
+      {gifts ? (
+        <CategoryTile
+          href={GIFTS_HREF}
+          label={gifts.label}
+          image={gifts.image}
+        />
+      ) : null}
       {tiles.map((item) => (
         <CategoryTile
           key={item.href}

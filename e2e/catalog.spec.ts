@@ -281,9 +281,12 @@ test.describe("product page", () => {
     await openProduct(page, "/p/demo-care-box");
     const bundle = page.getByRole("region", { name: "محتويات علبة الهدايا" });
     await expect(bundle.locator("a.lm-mini")).toHaveCount(3);
-    // The bundle's category has no other products, so no related rail here.
+    // Other bundles may share the category (the demo gifts category has three): the
+    // related rail, when there is one, never lists the product itself.
     await expect(
-      page.getByRole("region", { name: "قد يعجبك أيضًا" }),
+      page
+        .getByRole("region", { name: "قد يعجبك أيضًا" })
+        .locator("a[href='/p/demo-care-box']"),
     ).toHaveCount(0);
     const ld = await page
       .locator('script[type="application/ld+json"]')

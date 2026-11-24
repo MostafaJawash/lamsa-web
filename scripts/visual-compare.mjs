@@ -103,16 +103,20 @@ async function shootSite(
   scheme,
   fullPage = true,
 ) {
-  const page = await browser.newPage({
+  const context = await browser.newContext({
     viewport: { width, height },
     colorScheme: scheme,
     ...(state ? { storageState: state } : {}),
   });
+  // The site is light by default whatever the device prefers: dark needs its cookie.
+  if (scheme === "dark")
+    await context.addCookies([{ name: "lamsa-theme", value: "dark", url: base }]);
+  const page = await context.newPage();
   await page.goto(base + path, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${out}/${name}.png`, fullPage });
-  await page.close();
+  await context.close();
 }
 
 /**

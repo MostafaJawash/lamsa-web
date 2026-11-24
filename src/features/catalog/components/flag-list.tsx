@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import { Suspense } from "react";
 
 import { PageChrome } from "@/components/layout/page-chrome";
@@ -14,7 +14,10 @@ import {
   type ListSearchParams,
 } from "./list-results";
 
-type Flag = "new" | "sale";
+type Flag = "new" | "sale" | "all";
+
+/** `/new`, `/sale`, `/products`. */
+const basePathOf = (kind: Flag) => (kind === "all" ? "/products" : `/${kind}`);
 
 const TEXT = {
   new: {
@@ -27,6 +30,11 @@ const TEXT = {
     sub: () => t("list.subSale"),
     empty: () => t("list.emptySale"),
   },
+  all: {
+    title: () => t("pages.allProducts"),
+    sub: () => t("list.subAll"),
+    empty: () => t("list.emptyAll"),
+  },
 } as const;
 
 /** Metadata of page `page` of "جديد" or "التخفيضات" (static: no search params). */
@@ -34,7 +42,7 @@ export function flagListMetadata(kind: Flag, page: number): Metadata {
   return listMetadata({
     title: TEXT[kind].title(),
     description: TEXT[kind].sub(),
-    basePath: `/${kind}`,
+    basePath: basePathOf(kind),
     page,
   });
 }
@@ -56,15 +64,17 @@ export async function FlagList({
   await requirePage(scope, page);
   const list = {
     scope,
-    basePath: `/${kind}`,
+    basePath: basePathOf(kind),
     title: TEXT[kind].title(),
     sub: TEXT[kind].sub(),
     page,
     emptyTitle: TEXT[kind].empty(),
   };
   return (
-    <PageChrome path={`/${kind}`}>
-      <CategoryChips active={`/${kind}`} />
+    <PageChrome path={basePathOf(kind)}>
+      <CategoryChips
+        active={kind === "all" ? null : (basePathOf(kind) as Route)}
+      />
       <Suspense fallback={<ListPreview {...list} />}>
         <ListResults {...list} searchParams={searchParams} />
       </Suspense>

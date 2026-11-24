@@ -13,6 +13,7 @@ export type ListScope =
   | { kind: "brand"; slug: string }
   | { kind: "new" }
   | { kind: "sale" }
+  | { kind: "all" }
   | { kind: "search" };
 
 export type FilterPair = readonly [name: string, value: string];
