@@ -42,7 +42,10 @@ export function PageStyleSync() {
         const hidden =
           style.style.display === "none" ||
           style.parentElement?.checkVisibility() === false;
-        style.media = hidden ? "not all" : "";
+        // Write only a change: `media = ""` on a style that has none adds an attribute,
+        // which React reports as a hydration mismatch when this page hydrates later.
+        const wanted = hidden ? "not all" : "";
+        if (style.media !== wanted) style.media = wanted;
       }
     };
     const frame = requestAnimationFrame(sync);

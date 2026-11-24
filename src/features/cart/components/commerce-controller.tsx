@@ -26,6 +26,21 @@ function hearts(productId?: string): HTMLButtonElement[] {
 }
 
 /**
+ * True once React has hydrated this element: React tags a node with `__reactFiber$…` right
+ * before it compares the server markup with its props. Writing `aria-pressed` earlier
+ * (the home rails and lists stream inside <Suspense> and hydrate after the layout) makes
+ * React report a hydration mismatch on the attribute, so such hearts wait.
+ */
+function isHydrated(node: Element): boolean {
+  for (const key in node) if (key.startsWith("__reactFiber$")) return true;
+  return false;
+}
+
+/** How often, and for how long, to look again for hearts that are not hydrated yet. */
+const HYDRATION_RETRY_MS = 100;
+const HYDRATION_RETRY_LIMIT = 150;
+
+/**
  * The one client controller for hearts, favorites-page actions and flash toasts,
  * mounted once in the root layout (no client component per card):
  * - reads the visitor's favorite ids once per page view (server action) and marks the
@@ -50,16 +65,27 @@ export function CommerceController({ flash }: { flash: string | null }) {
   // Favorite ids, once per page view; mark hearts now and whenever new ones appear.
   useEffect(() => {
     let cancelled = false;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    let attempts = 0;
     const mark = () => {
       const ids = favorites.current;
       if (!ids) return;
+      let waiting = false;
       for (const button of hearts()) {
         const id = button.dataset.productId ?? "";
         if (pending.current.has(id)) continue;
+        if (!isHydrated(button)) {
+          waiting = true;
+          continue;
+        }
         const pressed = String(ids.has(id));
         if (button.getAttribute("aria-pressed") !== pressed)
           button.setAttribute("aria-pressed", pressed);
       }
+      // Hydration adds nothing to the DOM, so no observer fires: look again shortly.
+      clearTimeout(retry);
+      if (waiting && !cancelled && attempts++ < HYDRATION_RETRY_LIMIT)
+        retry = setTimeout(mark, HYDRATION_RETRY_MS);
     };
     void getFavoriteState().then((state) => {
       if (cancelled || !state) return;
@@ -72,6 +98,7 @@ export function CommerceController({ flash }: { flash: string | null }) {
     observer.observe(main, { childList: true, subtree: true });
     return () => {
       cancelled = true;
+      clearTimeout(retry);
       observer.disconnect();
     };
   }, [pathname]);
